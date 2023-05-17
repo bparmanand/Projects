@@ -1,0 +1,30 @@
+\begin{verbatim}
+Family: gaussian 
+Link function: identity 
+
+Formula:
+log_Price ~ TypeOfBuyer + NumBeds + NumBaths + HasGarage + HasSecGate + 
+    bt_age_log_age + Age
+
+Parametric coefficients:
+                   Estimate Std. Error t value Pr(>|t|)    
+(Intercept)       12.636387   0.031557 400.428  < 2e-16 ***
+TypeOfBuyerRental  0.167885   0.017208   9.756  < 2e-16 ***
+NumBeds2           0.384933   0.027031  14.240  < 2e-16 ***
+NumBeds3           0.681198   0.031598  21.559  < 2e-16 ***
+NumBeds4           0.553684   0.036969  14.977  < 2e-16 ***
+NumBeds6           0.695256   0.059348  11.715  < 2e-16 ***
+NumBeds8           1.095722   0.063960  17.131  < 2e-16 ***
+NumBaths2          0.083150   0.015026   5.534 3.46e-08 ***
+NumBaths3          0.129513   0.029408   4.404 1.11e-05 ***
+HasGarage          0.349911   0.019458  17.983  < 2e-16 ***
+HasSecGate         0.221579   0.019581  11.316  < 2e-16 ***
+bt_age_log_age     0.006339   0.001030   6.153 8.86e-10 ***
+Age               -0.035709   0.003995  -8.938  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+R-sq.(adj) =  0.614   Deviance explained = 61.6%
+GCV = 0.077393  Scale est. = 0.076987  n = 2473
+\end{verbatim}

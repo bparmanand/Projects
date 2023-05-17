@@ -1,0 +1,209 @@
+%\documentclass[11pt]{paper}
+%\usepackage{fullpage}
+%\usepackage{palatino}
+%\usepackage{amsfonts,amsmath,amssymb}
+%% \usepackage{graphicx}
+%
+%\usepackage{listings}
+%\usepackage{textcomp}
+%\usepackage{color}
+%
+%\definecolor{dkgreen}{rgb}{0,0.6,0}
+%\definecolor{gray}{rgb}{0.5,0.5,0.5}
+%\definecolor{mauve}{rgb}{0.58,0,0.82}
+%
+%\lstset{frame=tb,
+%  language=R,
+%  aboveskip=3mm,
+%  belowskip=3mm,
+%  showstringspaces=false,
+%  columns=flexible,
+%  basicstyle={\small\ttfamily},
+%  numbers=none,
+%  numberstyle=\tiny\color{gray},
+%  keywordstyle=\color{blue},
+%  commentstyle=\color{dkgreen},
+%  stringstyle=\color{mauve},
+%  breaklines=true,
+%  breakatwhitespace=true,
+%  tabsize=3
+%}
+%
+%
+%
+%\ifx\pdftexversion\undefined
+%    \usepackage[dvips]{graphicx}
+%\else
+%    \usepackage[pdftex]{graphicx}
+%    \usepackage{epstopdf}
+%    \epstopdfsetup{suffix=}
+%\fi
+%
+%\usepackage{subfig}
+%
+%
+%% This allows pdflatex to print the curly quotes in the
+%% significance codes in the output of the GAM.
+%\UseRawInputEncoding
+%
+%\begin{document}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Problem Set 7
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\pagestyle{empty}
+%{\noindent\bf Spring 2023 \hfill Brandon~Parmanand}
+%\vskip 16pt
+%\centerline{\bf University of Central Florida}
+%\centerline{\bf College of Business}
+%\vskip 16pt
+%\centerline{\bf QMB 6911}
+%\centerline{\bf Capstone Project in Business Analytics}
+%\vskip 10pt
+%\centerline{\bf Solutions:  Problem Set \#7}
+%\vskip 32pt
+%\noindent
+%% 
+%\section{Data Description}
+%
+%This analysis follows the script \texttt{PS7.R} to produce a more accurate model for used tractor prices with the data from \texttt{homesales.dat} in the \texttt{Data} folder. 
+
+I will revisit the recommended linear model.
+I will further investigate nonlinear relationships
+by incorporating another nonlinear but parametric specification
+for variables.
+This parametric analysis will be performed
+using the Box-Tidwell framework
+to investigate whether the value of these characteristics
+are best described with parametric nonlinear forms. 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Linear Regression Model}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Suggested Linear Regression Model}
+A natural staring point is the recommended linear model
+from previous which we can see in Table \ref{tab:reg_comp}. 
+
+% 
+\input{../Tables/reg_comp}
+% 
+There are houses that were built in 2021 so in order to account for this in the model, an edit was made to calculate age by taking 2022- Year Built. Additionally, Number of Beds and Numbers of Bathrooms were treated as factors in the model as they more so categorize the houses.
+%
+\clearpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \clearpage
+\section{Nonlinear Specifications}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\pagebreak
+\subsection{The Box--Tidwell Transformation}
+
+The Box--Tidwell function tests for non-linear relationships
+to the mean of the dependent variable.
+The nonlinearity is in the form of an
+exponential transformation in the form of the Box-Cox
+transformation, except that the transformation is taken
+on the explanatory variables.
+
+
+\subsubsection{Transformation of Lot Size}
+
+
+Performing the transformation on the Lot Size variable
+produces a modified form of the linear model. The exponentis significantly differnt from 0. WItrh a small positive value that suggest an increasing relationship then leveling off to a slower increase. 
+
+\input{../Tables/bt_lot}
+
+
+
+\subsubsection{Transformation of Age}
+
+
+\input{../Tables/bt_age}
+
+This coefficient is significantly different than 0. With a positive value that suggest not quite a linear relationship but it is an increasing relationship with it leveling off and increasing at a slower rate.  
+
+\subsubsection{Transformation of Transit Score}
+
+
+\input{../Tables/bt_trans}
+
+The transit score coefficient is not statistically significant but it is close to 1 showing close to linear realationship.
+
+Since a nonlinear relationship was detected with age and lot size,
+I will next estimate a model
+with nonlinearity in all three continuous variables.
+
+
+\subsubsection{Transformation of All Three Continuous Variables}
+
+
+\input{../Tables/bt_full}
+
+
+The performance is similar to the other models with
+forms of nonlinearity .
+
+
+
+\pagebreak
+\section{Linear Approximation of the Box--Tidwell Transformation}
+
+I created three variables 
+\texttt{bt\_trans\_log\_trans}, \texttt{bt\_age\_log\_age}, and \texttt{bt\_lot\_log\_lot}, 
+all of which were created by a transformation of the form $f(x) = x\cdot\log(x)$. 
+Table \ref{tab:reg_bt_lin} collects the results
+of the set of models from the nonlinear approximation to the models with the three forms of nonlinearity.
+Model 1 is the linear regression model with  
+the approximation of the transformation applied to transit score. 
+Models 2 and 3
+have the same specification as the other one, 
+except that the transit score variable is replaced with
+the variables for age and lot size, respectively. 
+The coefficient on \texttt{bt\_age\_log\_age}
+is the most statistically significant. 
+And the coefficient on \texttt{bt\_lot\_log\_lot} is also statistically signifcant. 
+This implies, just as the Box-Tidwell statistic predicts, 
+a nonlinear relationship exists for the value of age and lot size.
+The transit score is not statistically significant as the other two
+indicating that a linear relationship suffices for the decline in value from transit score.
+
+\input{../Tables/reg_bt_lin}
+
+
+\pagebreak
+\section{Comparison of Candidate Models}
+
+Comparing the three models, Age and Lot Size were both significantly signifcant with p less than $0.001$ but the model with the age transformation had the highest R squared. I created a variable \texttt{age\_bt}
+by raising age to the optimal exponent 
+$\hat{\lambda} = 0.49715$. 
+Then, I included this variable in the place of 
+the age variables a the linear regression model.
+% 
+Table \ref{tab:reg_sq_horse_bt} collects the results
+of the set of models from the two forms of nonlinearity.
+Model 1 is the approximation to the Box-Tidwell transformation
+from Model 2 of Table \ref{tab:reg_bt_lin}. 
+Model 2
+has the same specification as the approximate transformation, 
+except that the age variable is transformed using the optimal
+exponent for the Box-Tidwell transformation. 
+% 
+The last model has the highest R-squared
+among the ones we have estimated, 
+with only a slight improvement over the linear approximation.
+Again, the differences are marginal, so the practical recommendation
+is model with the $f(x) = x\cdot\log(x)$.
+
+
+\input{../Tables/reg_sq_age_bt}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

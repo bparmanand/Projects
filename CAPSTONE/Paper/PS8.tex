@@ -1,0 +1,471 @@
+%\documentclass[11pt]{paper}
+%\usepackage{palatino}
+%\usepackage{amsfonts,amsmath,amssymb}
+%% \usepackage{graphicx}
+%
+%\usepackage{listings}
+%\usepackage{textcomp}
+%\usepackage{color}
+%
+%\definecolor{dkgreen}{rgb}{0,0.6,0}
+%\definecolor{gray}{rgb}{0.5,0.5,0.5}
+%\definecolor{mauve}{rgb}{0.58,0,0.82}
+%
+%\lstset{frame=tb,
+%  language=R,
+%  aboveskip=3mm,
+%  belowskip=3mm,
+%  showstringspaces=false,
+%  columns=flexible,
+%  basicstyle={\small\ttfamily},
+%  numbers=none,
+%  numberstyle=\tiny\color{gray},
+%  keywordstyle=\color{blue},
+%  commentstyle=\color{dkgreen},
+%  stringstyle=\color{mauve},
+%  breaklines=true,
+%  breakatwhitespace=true,
+%  tabsize=3
+%}
+%
+%
+%
+%\ifx\pdftexversion\undefined
+%    \usepackage[dvips]{graphicx}
+%\else
+%    \usepackage[pdftex]{graphicx}
+%    \usepackage{epstopdf}
+%    \epstopdfsetup{suffix=}
+%\fi
+%
+%\usepackage{subfig}
+%
+%
+%% This allows pdflatex to print the curly quotes in the
+%% significance codes in the output of the GAM.
+%\UseRawInputEncoding
+%
+%\begin{document}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Problem Set 8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\pagestyle{empty}
+%{\noindent\bf Spring 2023 \hfill Brandon~Parmanand}
+%\vskip 16pt
+%\centerline{\bf University of Central Florida}
+%\centerline{\bf College of Business}
+%\vskip 16pt
+%\centerline{\bf QMB 6911}
+%\centerline{\bf Capstone Project in Business Analytics}
+%\vskip 10pt
+%\centerline{\bf Solutions:  Problem Set \#8}
+%\vskip 32pt
+%\noindent
+%% 
+%
+%
+%{\color{red} 
+%Quick comments:
+%Excellent work; no major problems with modeling decisions.
+%Each of you made different decisions with respect to model specification
+%and built models of similar accuracy.
+%The implementation of FWL regressions and nonparametric/semiparametric models was well done.
+%
+%The only part that I did not find was a comparison of the GAM vs. the Box-Tidwell modeling framework (please correct me if I am wrong). Other than that minor misstep, this was great.
+%}
+%
+%\section{Data Description}
+%
+%This analysis follows the script \texttt{PS8.R} to produce a more accurate model for used tractor prices with the data from \texttt{HomeSales.dat} in the \texttt{Data} folder. 
+I will revisit the recommended linear model,
+which included a Box Tildwell specification for age. 
+I will investigate this nonlinear relationship
+by incorporating a nonparametric specification
+for the value of age. 
+Similarly, for the other continuous variables Lot Size and Transit Score, 
+to investigate whether these forms of depreciation
+are best described with nonlinear forms. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Linear Regression Model}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ 
+
+\subsection{Box Tildwell Specification for Age}
+
+% 
+\input{../Tables/reg_bt_age}
+% 
+
+The results of this regression specification are shown in 
+Table \ref{tab:reg_bt_age}. 
+The BT Age variable has a coefficient of 
+% $6.082e-03$,
+$6.082\times10^{-3}$,  
+which is larger than the standard error of 
+% $9.404e-03$, 
+$9.404\times10^{-3}$, 
+which is evidence against the null hypothesis of a positive or zero coefficient. 
+I conclude that the log of the sale price does decline for older homes. 
+
+
+%	With the squared horsepower variable, the $\bar{R}^2$ is $0.6503$, indicating that it is a slightly stronger model than the others we considered. 
+%	The $F$-statistic is large, indicating that it is a better candidate than the simple average log sale price. 
+%	The new BT age variable is statistically significant and the theory behind it is sound, since above a certain point. 
+%	This new model is improved over the previous models with other specifications for age.
+Next, I will attempt to improve on this specification. 
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Nonlinear Specifications}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% \clearpage
+\subsection{Nonparametric Specification for Age}
+
+
+The specification in 
+Table \ref{tab:reg_bt_age}
+assumes a Box Tildwell form for
+the relationship between price and age. 
+To consider the age variable alone, 
+while accounting for the effects of other variables, 
+one can fit a nonparametric model to the residuals 
+from a model of house prices, 
+after regressing house prices on the other variables. 
+This leaves only the variation in house prices that is not explained by the other variables. 
+Going one step further, perform the same transformation to the age variable:
+take the residuals from a model of age, 
+after regressing age on the other variables. 
+This allows a model that would fit exactly the same as if it were estimated within a full model with all variables included. 
+
+The models shown in
+Table \ref{tab:reg_bt_age_fwl}
+illustrate this possibility. 
+Model 1 is the original model in 
+Table \ref{tab:reg_bt_age}. 
+Model 2 is a regression omitting the age variables. 
+Model 3 is a regression to predict age with the other explanatory variables in Model 2.
+Model 4 is a regression to predict BT age with the other explanatory variables in Model 2.
+Finally, Model 5 shows the coefficients for age
+from a regression of the residuals of Model 2
+on the residuals from Model 3. 
+Notice that these coefficients match those in Model 1. 
+You might notice a slight difference in the standard errors, however, 
+because these are calculated assuming coefficients 
+for two variables, age and BT age,
+rather than the full suite of ten parameters.
+This equivalence of the coefficients can be used to fit
+nonlinear models between a pair of variables by 
+partialing out the effect of the other variables.
+
+\input{../Tables/reg_bt_age_fwl}
+
+\pagebreak 
+To illustrate the fit of the model, 
+Figure \ref{fig:dev_vs_age} shows a scatter plot 
+of the residual log prices on age. 
+The observations are shown in blue
+and the fitted values are shown in red.
+The variation in the fitted values results from the 
+fact that it is not plotted against the transformed excess age variable used in the regressions.
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_vs_age}
+  \caption{Linear-Box Tildwell Model for House Prices} \label{fig:dev_vs_age}
+\end{figure}
+
+
+
+\pagebreak
+As a comparison, Figure \ref{fig:dev_vs_age_dev} 
+augments the above by showing the plot against the 
+residuals from the regression for age:
+the ``excess age'' compared to what would be 
+expected given the other characteristics of a house.
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_vs_age_dev}
+  \caption{Linear-BT Model for House Prices: Excess Age} \label{fig:dev_vs_age_dev}
+\end{figure}
+
+\clearpage
+Now consider a nonparametric specification for 
+the relationship between prices and age.
+Figure \ref{fig:dev_np_vs_age_dev} 
+overlays the nonparametric estimate (shown in green) with the above in 
+Figure \ref{fig:dev_vs_age_dev}.
+The pattern has more variation in slope but 
+closely follows the prediction from the BT model. 
+So far, it appears that the BT form
+is close enough.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_np_vs_age_dev}
+  \caption{Nonparametric Model for House Prices: Excess Age} \label{fig:dev_np_vs_age_dev}
+\end{figure}
+
+ 
+
+\clearpage
+Finally, consider a set of nonparametric specifications for 
+the relationship between prices and age.
+Figure \ref{fig:dev_np_vs_age_dev_bw} 
+overlays other nonparametric estimates with the above in 
+Figure \ref{fig:dev_np_vs_age_dev}.
+The points in orange and in magenta represent
+alternate models with different degrees of smoothing. 
+%
+When we estimated probability densities,
+we adjusted the bandwidth parameter to fit
+with different degrees of smoothness.
+The \texttt{loess} method used for the nonparametric method has a span parameter for this function.
+The default smoother \texttt{span} (bandwidth parameter) is 0.75.
+
+In the magenta points, with \texttt{span} parameter 0.1, the pattern has more variation in slope but 
+closely follows the prediction from the BT model. 
+The smoother curve in orange 
+even more closely represents a straight line. 
+Again, it appears that the BT form
+is close enough.
+Perhaps the result will be different for other continuous variables in the model.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_np_vs_age_dev_bw}
+  \caption{Nonparametric Model for House Prices: Excess Age} \label{fig:dev_np_vs_age_dev_bw}
+\end{figure}
+
+
+
+
+
+\clearpage
+\subsection{Nonparametric Specification for Lot Size}
+
+As above, first conduct FWL regressions 
+to reduce the problem to two dimensions. 
+The models shown in
+Table \ref{tab:reg_lot_fwl}
+illustrate this possibility. 
+Model 1 is the same original model in 
+Table \ref{tab:reg_bt_age}. 
+Model 2 is a regression omitting the age variable. 
+Model 3 is a regression to predict age with the other explanatory variables in Model 2.
+Finally, Model 4 shows the coefficient for Lot Size
+from a regression of the residuals of Model 2
+on the residuals from Model 3. 
+Notice that these coefficients match those in Model 1. 
+
+\input{../Tables/reg_lot_fwl}
+
+\pagebreak 
+To illustrate the fit of the model, 
+Figure \ref{fig:dev_vs_lot} shows a scatter plot 
+of the residual log prices on Lot Size. 
+The observations are shown in blue
+and the fitted values are shown in red.
+The variation in the fitted values results from the 
+fact that it is not plotted against the transformed excess lot size variable used in the regressions.
+Still, the linear pattern is apparent
+and appears to match the data. 
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_vs_lot}
+  \caption{Linear-BT Model for House Prices} \label{fig:dev_vs_lot}
+\end{figure}
+
+
+
+\pagebreak
+As a comparison, Figure \ref{fig:dev_vs_lot_dev} 
+augments the above by showing the plot against the 
+residuals from the regression for lot size:
+the ``excess lot size'' of a house compared to what would be 
+expected given the other characteristics of the hosue. 
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_vs_lot_dev}
+  \caption{Linear-BT Model for House Prices: Excess Lot Size} \label{fig:dev_vs_lot_dev}
+\end{figure}
+
+\clearpage
+Now consider a nonparametric specification for 
+the relationship between prices and Lot Size.
+Figure \ref{fig:dev_np_vs_lot_dev} 
+overlays the nonparametric estimate (shown in green) with the above in 
+Figure \ref{fig:dev_vs_lot_dev}.
+The pattern has more variation in slope but 
+closely follows the prediction from the linear model. 
+Although the nonparametric estimate varies around the linear estimate,
+it appears that the linear form
+is a close enough approximation without the added complexity.
+Next, I will explore the transit score variable.
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_np_vs_lot_dev}
+  \caption{Nonparametric Model for House Prices: Excess Lot Size} \label{fig:dev_np_vs_lot_dev}
+\end{figure}
+
+
+
+
+
+\clearpage
+\subsection{Nonparametric Specification for Transit Score}
+
+As above, first conduct FWL regressions 
+to reduce the problem to two dimensions. 
+The models shown in
+Table \ref{tab:reg_trans_fwl}
+illustrate this possibility. 
+Model 1 is the same original model in 
+Table \ref{tab:reg_bt_age}. 
+Model 2 is a regression omitting the transit score variable. 
+Model 3 is a regression to predict transit score with the other explanatory variables in Model 2.
+Finally, Model 4 shows the coefficient for trasnit score
+from a regression of the residuals of Model 2
+on the residuals from Model 3. 
+Notice that these coefficients match those in Model 1. 
+
+\input{../Tables/reg_trans_fwl}
+
+\pagebreak 
+To illustrate the fit of the model, 
+Figure \ref{fig:dev_vs_trans} shows a scatter plot 
+of the residual log prices on transit score. 
+The observations are shown in blue
+and the fitted values are shown in red.
+The variation in the fitted values results from the 
+fact that it is not plotted against the transformed excess transit score variable used in the regressions.
+Still, the linear pattern is apparent
+and appears to match the data. 
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_vs_trans}
+  \caption{Linear-BT Model for House Prices} \label{fig:dev_vs_trans}
+\end{figure}
+
+
+
+\pagebreak
+As a comparison, Figure \ref{fig:dev_np_vs_trans_dev} 
+augments the above by showing the plot against the 
+residuals from the regression for age:
+the ``excess transit score'' of a house compared to what would be 
+expected given the other characteristics of the house. 
+
+% 
+I move directly to the nonparametric specification for 
+the relationship between prices and transit score.
+Figure \ref{fig:dev_np_vs_trans_dev} 
+overlays the nonparametric estimate, shown in green. 
+
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/dev_np_vs_trans_dev}
+  \caption{Nonparametric Model for House Prices: Excess Transit Score} \label{fig:dev_np_vs_trans_dev}
+\end{figure}
+
+ 
+
+\pagebreak
+\section{Semiparametric Estimates}
+
+As I was building the above nonparametric models, 
+I stored the predictions and will now use them as variables in 
+linear models. 
+Table \ref{tab:reg_semipar} 
+shows the estimates from a set of models. 
+Model 1 is the benchmark linear model in 
+Table \ref{tab:reg_bt_age}. 
+Model 2 is a semi-parametric model
+with a nonparametric fit on age
+substituted in for the age variables.
+Models 3 and 4 are semi-parametric models
+with nonparametric fits on lot size and transit score, respectively.
+Model 5 is a maximally semiparametric model, 
+with nonparametric fits for all continuous variables. 
+For each of the single-variable semiparametric models, 
+the coefficients are near one
+and the fits are similar to the linear model. 
+Even with maximal flexibility, the fit of Model 5
+is not much better than the benchmark linear model. 
+Across models 1, 4 and 5, the adjusted $\bar{R}^2$ values are all hovering around 0.62. 
+All things considered, these are excellent models
+and the linear model is sufficient.
+
+\input{../Tables/reg_semipar}
+
+
+
+
+
+\pagebreak
+\section{Generalized Additive Model}
+
+\subsection{Linear Model}
+
+As an example of the output from the GAM specification, 
+I first estimated the model with no nonlinear terms, 
+which is essentially a linear regression. 
+
+\input{../Tables/reg_GAM_lin}
+
+\pagebreak
+\subsection{Semiparametric Model}
+
+
+Further investigating the results of the full semiparametric specification
+of Model 5 of Table \ref{tab:reg_semipar},
+I estimated the model with all three continuous variables specified as nonparametric functions. 
+The result was that 
+almost all the variables---both linear and nonlinear---were 
+statistically significant. 
+
+
+\input{../Tables/reg_GAM_full}
+
+On the other hand, 
+the adjusted R-squared has decreased
+from 0.68 to 0.614 under this specification, 
+which therefore suggests this complex model is not efficient as the more simpler one.
+
+
+Perhaps as a middle ground, we can estimate a model with a 
+nonparametric specification for the age variable alone, 
+since it seems to have a nonlinear relationship with value in either case. 
+This retains most of the predictive value of the maximally 
+semiparametric model and accommodates the 
+nonlinear relationship with value of age. This brought the adjusted R Squared back up to .68 but still the model is too complex to be chosen and the original model chosen in Problem Set 7 should be used.
+
+\input{../Tables/reg_GAM_age}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

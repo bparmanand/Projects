@@ -1,0 +1,186 @@
+%\documentclass[11pt]{paper}
+%\usepackage{palatino}
+%\usepackage{amsfonts,amsmath,amssymb}
+%% \usepackage{graphicx}
+%
+%\usepackage{listings}
+%\usepackage{textcomp}
+%\usepackage{color}
+%
+%\definecolor{dkgreen}{rgb}{0,0.6,0}
+%\definecolor{gray}{rgb}{0.5,0.5,0.5}
+%\definecolor{mauve}{rgb}{0.58,0,0.82}
+%
+%\lstset{frame=tb,
+%  language=R,
+%  aboveskip=3mm,
+%  belowskip=3mm,
+%  showstringspaces=false,
+%  columns=flexible,
+%  basicstyle={\small\ttfamily},
+%  numbers=none,
+%  numberstyle=\tiny\color{gray},
+%  keywordstyle=\color{blue},
+%  commentstyle=\color{dkgreen},
+%  stringstyle=\color{mauve},
+%  breaklines=true,
+%  breakatwhitespace=true,
+%  tabsize=3
+%}
+%
+%
+%
+%\ifx\pdftexversion\undefined
+%    \usepackage[dvips]{graphicx}
+%\else
+%    \usepackage[pdftex]{graphicx}
+%    \usepackage{epstopdf}
+%    \epstopdfsetup{suffix=}
+%\fi
+%
+%\usepackage{subfig}
+%
+%\begin{document}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Problem Set 6
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\pagestyle{empty}
+%{\noindent\bf Spring 2023 \hfill Brandon~Parmanand}
+%\vskip 16pt
+%\centerline{\bf University of Central Florida}
+%\centerline{\bf College of Business}
+%\vskip 16pt
+%\centerline{\bf QMB 6911}
+%\centerline{\bf Capstone Project in Business Analytics}
+%\vskip 10pt
+%\centerline{\bf Solutions:  Problem Set \#6}
+%\vskip 32pt
+%\noindent
+%
+%\section{Data Description}
+%
+%This analysis follows the script \texttt{PS6.R} to produce a more accurate model for House prices with the data from \texttt{HomeSales.dat} in the \texttt{Data} folder. 
+%
+%
+I will first estimate a model with the entire sampeles, including both rental and owner occupied. Then I will consider exclusions of insignificant variables from the full model. 
+This approach allows for exclusion of possibly irrelevant variables and avoids excluding any relevant variables. 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Choosing the Dependent Variable
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\pagebreak
+\section{Choosing the Dependent Variable}
+
+Before we begin, I review the evidence for the suitability of the 
+dependent variable without transformation
+and compare that with the logarithmic transformation. 
+Although, in this case, this decision is fairly clearly made by plotting the dependent variable alone, 
+in many cases, the decision is not so clear and other forms
+of evidence can be considered once building a model. 
+
+
+\subsection{Univariate Analysis}
+
+Figure \ref{fig:hist_price} shows a histogram of home prices.
+This is a skewed distribution, which might influence the
+estimates of parameters in the model so I will plot a histogram of the log of home prices.
+
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/hist_price}
+  \caption{Histogram of House Prices} \label{fig:hist_price}
+\end{figure}
+
+
+
+\pagebreak
+As a comparison, Figure \ref{fig:hist_log_price} shows the histogram of the natural logarithm of
+price.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[scale = 0.5, keepaspectratio=true]{../Figures/hist_log_price}
+  \caption{Histogram of the Logarithm of Tractor Prices} \label{fig:hist_log_price}
+\end{figure}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Linear Regression Models
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\pagebreak
+\subsection{Linear Regression Models of House Prices}
+
+
+Here I build a regression model with all the variables and price and also another model with the natural logarithm prices.
+
+\input{../Tables/reg_price_w_log}
+
+The results of Model 1 and Model 2 in Table \ref{tab:reg_price_w_log}
+shows the effect of the variables on the dollar price of the
+home prices and natural logarithm of . 
+
+From the R squared value, natural log model (Model 2) is a better model to use.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Model Specification}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Variable Reduction}
+
+Next, I can refine the model by removing some explanatory variables that do not have string predictive value. 
+The first candidates are those with coefficients that are not statistically significant. 
+The results in Table \ref{tab:reg_reduction} are conducted using the natural logarithm prices as we concluded from the previous analysis.
+
+\input{../Tables/reg_reduction}
+
+The first column of Table \ref{tab:reg_reduction}
+shows the results from the original model of
+the logarithm of tractor prices in Table \ref{tab:reg_price_w_log}. 
+Model 2 was created with removing the variable FloorSpace due to the insignificance.
+Model 3 then also removed SchoolScore. The R squared changed only by minimal amount.
+Model 4 I removed whether it has an enclosed patio and then Model 5 removed whether the home has a pool.
+Model 5 or the fully reduced model would be the best model due to the R squared not being reduced too much and all variables are significant predictors.
+
+\clearpage
+\pagebreak
+\subsection{Analysis of Models of Owner-Occupied and Rentals}
+The results in Table \ref{tab:reg_buyer} are shown with Models 1-3 showing reductions of insignificant variables with owner occupied properties starting with all variables included in Model 1. Models 4-6 show the reduction of insignificant variables with rental properties starting with all variables included in Model 4. Again, variables were dropped if they were close to the p value of 0.05.
+Models 3 and 6 show the best model of Owner Occupied and Rental Houses, respectively. In those models, all variables are statistically significant and R sqaured are minimally affected.
+
+\input{../Tables/reg_buyer}
+\pagebreak
+\clearpage
+\subsection{Compare Models of Owner-Occupied and Rentals}
+
+
+We can also test for all of the differences at the same time
+by using an $F$-test.  
+% 
+The $F$-statistic has a value of 
+
+$$ 
+7.91
+$$
+
+This is a high value for the $F$-statistic. 
+We reject the null that all 
+coefficients are equal across both samples .
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

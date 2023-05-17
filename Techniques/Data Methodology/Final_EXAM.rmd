@@ -1,0 +1,426 @@
+---
+title: "Final Exam"
+author: "Brandon Parmanand"
+date: "04-27-2023"
+output:
+  html_document: default
+  pdf_document: default
+---
+#### Workplace Setup
+```{r echo = T, results = 'hide', warning=FALSE, message=FALSE}
+
+# Clear workspace.
+rm(list=ls(all=TRUE))
+
+# Set working directory
+wd_path <- '~/GitHub/Advanced_Data_Analytical_Methodology/Final'
+setwd(wd_path)
+
+# Load necessary packages
+# library(partykit)
+library(pROC)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+# install.packages("tidyverse")
+library(tidyverse)
+library(ggplot2)
+# library(xgboost)
+# library(randomForest)
+# #library(MASS)
+# library(cluster) 
+# library(factoextra)
+# library(tokenizers)
+library(gridExtra)
+library(caret)
+```
+
+# Question 1 
+#### The dataset for this question comes from https://www.kaggle.com/datasets/prasad22/government-financial-statistics-dataset and is in file ’HistoricalPublicDebtDatabase.csv’. It lists the ’Debt to GDP Ratio’ for countries over years. There are many missing values for countries that do not have records going very far back in time.
+
+#### Pt.1. Investigate the data and show which countries have the biggest increase in their debt ratio in the years 2015-2005. Produce a plot to show this effectively.
+```{r}
+# read the data in
+debt<-read.csv("HistoricalPublicDebtDatabase.csv")
+# investigate data layout
+str(debt)
+# head(debt)
+# Data observations over multiple years for multiple countries. Use Pivot_longer
+# function to pivot the data vertically in order to analyze while dropping NAs
+debt1=debt %>%
+  pivot_longer(
+    cols = 6:221,
+    names_to = "Year",
+    values_to = "Debt_Ratio",
+    values_drop_na = TRUE
+  )
+# investigate data again to make sure it was transformed correctly
+str(debt1)
+# need to remove X from year and format as numeric
+debt1$Year=as.numeric(gsub("X", "",debt1$Year))
+str(debt1)
+# country name variable is in weird format, reformat column names for ease of referencing
+colnames(debt1)[1] ="Country_Name"
+colnames(debt1)[2] ="Country_Code"
+colnames(debt1)[3] ="Indicator_Name"
+colnames(debt1)[4] ="Indicator_Code"
+str(debt1)
+head(debt1)
+# looks good so far, now I will create subsets of the data and create a variable 
+# how it has changed throughout the period of 2005 and 2015 by subtracting the debt
+# ratios for each country
+debt_2005 <- subset(debt1, debt1$Year==2005)
+debt_2015 <- subset(debt1, debt1$Year==2015)
+debt_2015$Increase <- debt_2015$Debt_Ratio - debt_2005$Debt_Ratio
+
+#arrange data from highest debt ratio increase in order to plot accordingly
+debt_2015=debt_2015%>%arrange(-Increase)
+head(debt_2015)
+# Japan, Greece, italy are the highest as listed in the tibble
+
+#  plot bar graph depicting highest debt ratio increases
+ggplot(debt_2015[1:10,], aes(x = reorder(Country_Name, -Increase), y = Increase,fill=Country_Name))+
+  geom_bar(stat="identity", show.legend=FALSE) + 
+  ggtitle("Top 10 Countries With Biggest Debt Ratio Increase from 2005 to 2015") +
+  ylab("Increase Of Debt Ratio") + xlab("Country") 
+# create table to export as image
+head_tbl<- head(debt_2015,n=10)
+head_tbl <- head_tbl[,c(1,9)]
+# export table as png
+png("top10_2005.png", height = 50*nrow(head_tbl), width = 200*ncol(head_tbl))
+grid.table(head_tbl)
+dev.off()
+
+```
+#### As depicted in the bar plot, Japan, Greece, and Italy has the highest increase in their debt ratio from the period of 2005 to 2015. 
+
+#### Pt.2. Which countries show a similar trend together for the years 2015-1990. (you can limit your results to max 3 groups and total 20 countries) Produce plots to show these associations and metrics calculated.
+
+
+```{r}
+# use pivoted data from the first part above to pull data from 1990 to 2015
+debt_1990 <- subset(debt1, debt1$Year==1990)
+debt_2015 <- subset(debt1, debt1$Year==2015)
+# create variable for change in debt ratio from 1990 to 2015
+debt_2015$Increase <- debt_2015$Debt_Ratio - debt_1990$Debt_Ratio
+# arrange data from highest increase to easily view and create bar plot
+debt_2015=debt_2015%>%arrange(-Increase)
+head(debt_2015)
+#create bar plot
+ggplot(debt_2015[1:20,], aes(x = reorder(Country_Name, -Increase), y = Increase,fill=Country_Name))+
+  geom_bar(stat="identity", show.legend=FALSE) + 
+  ggtitle("Top 20 Countries With Biggest Debt Ratio Increase from 1990 to 2015") +
+  ylab("Increase Of Debt Ratio") + xlab("Country")+
+  scale_x_discrete(guide = guide_axis(n.dodge=3)) 
+# create table to export as image
+head_tbl<- head(debt_2015,n=10)
+head_tbl <- head_tbl[,c(1,9)]
+# export table as png
+png("top10_1990.png", height = 50*nrow(head_tbl), width = 200*ncol(head_tbl))
+grid.table(head_tbl)
+dev.off()
+```
+#### Again, Japan, Greece, and Italy have the highest increases over the period of 1990 through 2015.
+
+
+#### Pt.3. Identify the most volatile countries and most stable countries using all the years and your choice of metrics.
+```{r}
+table(debt1$Year)
+# Using all the years will not provide great insight as there is 3 countries with
+# data in 1800. In order to provide insightful analysis, I will use the year where 
+# there are at least 100 observations, therefore I will start with 1973 through 2015
+
+# use pivoted data from the first part above to pull data from 1973 to 2015
+debt_1973 <- subset(debt1, debt1$Year==1973)
+debt_2015 <- subset(debt1, debt1$Year==2015)
+# create variable for change in debt ratio from 1973 to 2015
+debt_2015$Increase <- debt_2015$Debt_Ratio - debt_1973$Debt_Ratio
+# arrange data from highest increase to easily view and create bar plot
+
+debt_2015=debt_2015%>%arrange(-Increase)
+#head(debt_2015)
+#tail(debt_2015)
+# the head of the table will show largest increase of debt ratio, 
+# which is most volatile increase and the tail of the data will show largest decrease of 
+# debt ratio which is most volatile decrease
+# create table to export as image
+head_tbl<- head(debt_2015,n=10)
+head_tbl <- head_tbl[,c(1,9)]
+head_tbl
+
+tail_tbl<- tail(debt_2015,n=10)
+tail_tbl <- tail_tbl[,c(1,9)]
+tail_tbl=tail_tbl%>%arrange(Increase)
+tail_tbl
+# export table as png
+png("increase_volatile.png", height = 50*nrow(head_tbl), width = 200*ncol(head_tbl))
+grid.table(head_tbl)
+dev.off()
+
+png("decrease_volatile.png", height = 50*nrow(tail_tbl), width = 200*ncol(tail_tbl))
+grid.table(tail_tbl)
+dev.off()
+# create subset and tabulate  for least volatile or most stable countires
+stable <- debt_2015
+stable$Increase <- abs(as.numeric(stable$Increase))
+stable=stable%>%arrange(Increase)
+stable_tbl <- head(stable, n=10)
+stable_tbl <- stable_tbl[,c(1,9)]
+stable_tbl
+
+# export table as png
+png("stable.png", height = 50*nrow(stable_tbl), width = 200*ncol(stable_tbl))
+grid.table(stable_tbl)
+dev.off()
+
+```
+#### I chose 1973 as the starting year due to it being the first year with at least 100 countries observations. The metric I chose for volatility is the highest increase in the debt ratio as the most volatile and the largest decrease in the debt ratio and the least volatile. Oman and Botswana tops the chart with the least volatility. Japan and Greece has again topped the chart for highest increase in their debt ratios along with Portugal which translates into top 3 most volatile. Oman, Botswana, Kiribati are the top 3 decrease volatility.   
+
+# Question 2 
+#### The dataset for this question comes from https://www.kaggle.com/datasets/ppb00x/credit-risk-customers and is related to credit card risk, in file credit_card.csv’. The last column indicates whether the classification of credit is ’good’ or ’bad’.
+
+#### Pt.1. Find the probability that someone has (purpose=education,job=skilled,num_dependents>1).
+```{r}
+credit<-read.csv("credit_customers.csv")
+#create subset of data for required probability solution
+credit1 <- subset(credit, credit$purpose =="education")
+credit1 <- subset(credit1, credit1$job=="skilled")
+credit1 <- subset(credit1, credit1$num_dependents>1)
+# 6 observations over 1000 observations
+prob1 <- (dim(credit1)[1]/dim(credit)[1])*100
+prob1
+```
+#### There is a 0.6% chance that someone has purpose=education,job=skilled,num_dependents>1
+
+#### Pt.2. Find the probability that someone has (purpose=’used car’ or ’new car’,credit_amount>3000,class=good)
+```{r}
+credit2 <- subset(credit,credit$purpose%in%c("used car","new car"))
+credit2 <- subset(credit2,credit2$credit_amount>3000)
+credit2 <- subset(credit2,credit2$class=="good")
+
+prob2 <- (dim(credit2)[1]/dim(credit)[1])*100
+prob2
+
+```
+#### There is a 10.2% chance that someone has (purpose=’used car’ or ’new car’,credit_amount>3000,class=good)
+
+#### Pt.3. Produce a decision tree to predict the ’class’ variable that is trained and tested with a partition of 70/30.
+#### Pt.4. Present the decision tree and discuss which variables are most important.
+
+```{r}
+#check and transform class variable to factor and using binary operators 1 and 0
+# with 1 meaning good and 0 as bad
+summary(credit$class)
+credit$class <- ifelse(credit$class=="good", 1, 0)
+credit$class <- as.factor(credit$class)
+# set data to replicable and break out into testing and training dataframes
+set.seed(12345)
+train.index <- sample(row.names(credit), 0.7*dim(credit)[1])
+test.index <- setdiff(row.names(credit), train.index)
+train.df <- credit[train.index, ]
+test.df <- credit[test.index, ]
+
+# plot decision tree
+dec_tree <- rpart(class ~., data = train.df)
+rpart.plot(dec_tree)
+#summary(dec_tree)
+
+# predict dec tree on testing data set
+tree_pred = predict(dec_tree,
+                    newdata = test.df,
+                    type = "prob")[, 2]
+tree_pred <- ifelse(tree_pred>0.5, 1, 0)
+tree_pred <- as.factor(tree_pred)
+confusionMatrix(tree_pred, test.df$class)
+# show variable importance for decision tree
+dec_tree_var <- as.data.frame(dec_tree$variable.importance)
+dec_tree_var
+```
+#### The reported accuracy of the prediction of the decision tree on the testing data set is 72.67%. 
+#### The most important variable is the checking status which is the status of the existing checking account which makes sense as this can give great insight into spending habits. Also the duration, savings status and credit amount will provide insight.
+
+#### Pt.5. Produce a Random forest model and report on the accuracy as well as comparing to the decision tree. Then produce the variable importance.
+#### Pt.6. Do both models produce similar outcomes on the order of the variable importances?
+```{r}
+set.seed(12345)
+train_x<-train.df[,c(1:20)]
+train_y<-train.df$class
+# generate random forest model
+rf<-randomForest(x=train_x,y=train_y,
+                 ntree = 500,importance=TRUE)
+# predict on testing data frame
+test_x<-test.df[,c(1:20)]
+test_y<-test.df$class
+actual_values = test_y
+pred_values = predict(rf,test_x)
+cm = table(pred_values,actual_values)
+confusionMatrix(cm)
+# variable importance for random forest
+rf_var <- as.data.frame(varImp(rf))
+rf_var
+```
+#### The random forest model produces an accuracy of 74.33% compared to 72.67% with the decision tree proving to be a slighly better model. 
+#### When comparing the variable importance of both models, they both signify that the checking status is the most important variable along with duration, credit history, credit amount which absolultely makes sense in order to see the class of the rating.
+
+# Question 3
+#### The dataset for this question comes from https://www.kaggle.com/datasets/harshghadiya/ kidneystone and is related to Kidney stone detection, in file ’kidney-stone-dataset.csv’. The last col￾umn indicates whether the patient has Kidney or not (binary variable). The first column can be ignored from the model.
+
+#### Pt.1. Produce a training and testing partition of the data 70/30.
+
+```{r}
+# load in data
+kidney<-read.csv("kidney-stone-dataset.csv", stringsAsFactors = TRUE)
+str(kidney)
+kidney$target <- as.factor(kidney$target)
+summary(kidney$target)
+
+# set data to be replicable and split into testing and training
+set.seed(1234)
+train.index <- sample(row.names(kidney), 0.7*dim(kidney)[1])
+test.index <- setdiff(row.names(kidney), train.index)
+train.df <- kidney[train.index, ]
+test.df <- kidney[test.index, ]
+
+```
+#### Pt.2. Fit a logistic regression model to the training dataset and report on the accuracy on testing dataset.
+
+```{r}
+set.seed(1234)
+# generate logistic regression
+logistic <- glm(target ~ gravity + ph + osmo + cond + urea + calc, family = binomial(), train.df)
+summary(logistic)
+
+# predict logistic model on testing data
+pdata <- predict(logistic, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+
+log1 <- .8214
+
+```
+#### We receive an accuracy of 82.14%.
+
+#### Pt.3. Show how you can simplify the model by ignoring a set of variables. Order the importance of the variables in terms of how they affect the accuracy from smallest to largest testing accuracy drop.
+
+```{r}
+# variable importance list in order from least to most important
+logistic_var <- as.data.frame(varImp(logistic))
+logistic_var=logistic_var%>%arrange(Overall)
+logistic_var
+```
+
+
+```{r}
+# with osmo removed
+logistic2 <- glm(target ~ gravity + calc + urea + cond +  ph, family = binomial(), train.df)
+#summary(logistic2)
+
+
+pdata <- predict(logistic2, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+log2 <- .7857
+```
+```{r}
+logistic3 <- glm(target ~ gravity + calc + urea + cond , family = binomial(), train.df)
+#summary(logistic3)
+
+
+pdata <- predict(logistic3, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+log3<- .7857
+```
+```{r}
+logistic4 <- glm(target ~ gravity + calc + urea , family = binomial(), train.df)
+#summary(logistic4)
+
+
+pdata <- predict(logistic4, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+cm <- confusionMatrix(pdata, test.df$target)
+log4 <- .75
+```
+
+```{r}
+logistic5 <- glm(target ~ gravity + calc , family = binomial(), train.df)
+#summary(logistic4)
+
+
+pdata <- predict(logistic5, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+log5 <- .7143
+```
+```{r}
+logistic6 <- glm(target ~ gravity , family = binomial(), train.df)
+#summary(logistic4)
+
+
+pdata <- predict(logistic6, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+log6 <- .5714
+```
+
+
+
+#### Pt.4. Plot a graph of the testing accurancy changes as the variables are removed. You should see from the left the highest accuracy on testing with 0 removed, then the lowest accuracy on the right after each variable has been removed.
+```{r}
+# create x an y varaibles for bar plot. y is the accuracy generated through each 
+# logistic model I produced removing the most insignificant variables and x is 
+# the variables removed from left to right
+x<-c("FullModel","-Osmo","-ph","-cond","-urea","-calc")
+y<-c(log1,log2,log3,log4,log5,log6)
+accuracy_df=data.frame(x,y)
+accuracy_df
+# plot bar plot
+ggplot(accuracy_df, aes(x = reorder(x, -y), y = y,fill=x))+
+  geom_bar(stat="identity", show.legend=FALSE) + 
+  ggtitle("Decrease of Accuracy for Removing Least Important Variables, In order") +
+  ylab("Model Accuracy") + xlab("Variable Removed")                                  
+
+```
+
+#### Osmo and ph returned the same accuracy so perhaps both of these can be removed at once.
+#### Pt.5. Produce the ROC curves for the full model and then for the model with the most important variable removed. Discuss the results
+```{r}
+# generate area under the curive and plot ROC curve for full model 
+roc <- roc(train.df$target, logistic$fitted.values)
+auc(roc)
+plot(roc)
+
+# fit logistic regression with most important variable removed
+logistic7 <- glm(target ~ ph + osmo + cond + urea + calc, family = binomial(), train.df)
+#summary(logistic4)
+
+
+pdata <- predict(logistic7, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$target)
+# log6 <- .5156
+# generate AUC and plot ROC curve for model with most important variable removed 
+roc2 <- roc(train.df$target, logistic7$fitted.values)
+auc(roc2)
+plot(roc2)
+
+```
+
+#### Removing the most important variable tarnishes the accuracy and the fit of the model. The ROC curve for the full model with all variables present an AUC of .8844 and the model with the most important variable removed retruns a AUC of 0.7781. The best model is the full model with the largest AUC.  
+
+

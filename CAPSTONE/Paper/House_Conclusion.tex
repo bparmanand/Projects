@@ -1,0 +1,14 @@
+
+In this paper I conducted a thorough analysis of the prices from sales of houses in order to investigate what characteristics of the different houses affect the pricing and dive into the rental properties versus the owner-occupied properties to develop a model best suited to estimate price.
+
+In this paper I used various economic theories such as the market of lemons, characteristic theory, and hedonic pricing models. 
+Additionally, I utilized various framework including the Tobit models for sample selection. At the end of the analysis, I suggested using the linear model
+in which I used a box tidwell transformation for age and it is shown in Table \ref{tab:reg_bt_age}.
+Along with the box tidwell transformation for age, we kept significant variables type of buyer, number of bedrooms, number of bathrooms, age, lot size, whether it has a garage, whether it has a security gate, and the transit score. 
+These variables definitely make sense especially when determining for whether it's for a owner occupant or rental owner and correlate to pricing. With an R squared of 0.68 and adjusted R squared of 0.679, I conclude that it's a good model to estimate house prices.
+
+\input{../Tables/reg_bt_age}
+
+
+
+% \end{document}

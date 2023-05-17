@@ -1,0 +1,332 @@
+%\documentclass[11pt]{paper}
+%\usepackage{fullpage}
+%\usepackage{palatino}
+%\usepackage{amsfonts,amsmath,amssymb}
+%% \usepackage{graphicx}
+%
+%\usepackage{listings}
+%\usepackage{textcomp}
+%\usepackage{color}
+%
+%\definecolor{dkgreen}{rgb}{0,0.6,0}
+%\definecolor{gray}{rgb}{0.5,0.5,0.5}
+%\definecolor{mauve}{rgb}{0.58,0,0.82}
+%
+%\lstset{frame=tb,
+%  language=R,
+%  aboveskip=3mm,
+%  belowskip=3mm,
+%  showstringspaces=false,
+%  columns=flexible,
+%  basicstyle={\small\ttfamily},
+%  numbers=none,
+%  numberstyle=\tiny\color{gray},
+%  keywordstyle=\color{blue},
+%  commentstyle=\color{dkgreen},
+%  stringstyle=\color{mauve},
+%  breaklines=true,
+%  breakatwhitespace=true,
+%  tabsize=3
+%}
+%
+%
+%
+%\ifx\pdftexversion\undefined
+%    \usepackage[dvips]{graphicx}
+%\else
+%    \usepackage[pdftex]{graphicx}
+%    \usepackage{epstopdf}
+%    \epstopdfsetup{suffix=}
+%\fi
+%
+%\usepackage{subfig}
+%
+%
+%% This allows pdflatex to print the curly quotes in the
+%% significance codes in the output of the GAM.
+%\UseRawInputEncoding
+%
+%\begin{document}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Problem Set 10
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\pagestyle{empty}
+%{\noindent\bf Spring 2023 \hfill Brandon~Parmanand}
+%\vskip 16pt
+%\centerline{\bf University of Central Florida}
+%\centerline{\bf College of Business}
+%\vskip 16pt
+%\centerline{\bf QMB 6911}
+%\centerline{\bf Capstone Project in Business Analytics}
+%\vskip 10pt
+%\centerline{\bf Solutions:  Problem Set \#10}
+%\vskip 32pt
+%\noindent
+%% 
+%\section{Data Description}
+%
+%This analysis follows the script \texttt{PS10.R} to produce a more accurate model for used tractor prices with the data from \texttt{homesales.dat} in the \texttt{Data} folder. 
+%
+
+I will revisit the recommended linear model in which we
+considered other nonlinear specifications
+within a Generalized Additive Model. 
+
+Then I will further investigate this nonlinear relationship
+by considering the issue of sample selection:
+whether a house will be owner occupied or a rental.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Linear Regression Model}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+My starting point is my recommended linear model
+in which I used a box tidwell transformation for age and it is shown in Table \ref{tab:reg_bt_age}.
+
+% 
+\input{../Tables/reg_bt_age}
+% 
+
+I will attempt to improve on this specification, 
+using Tobit models for sample selection. 
+
+\clearpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \pagebreak
+\subsubsection{Separate Models by Brand}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+To test for many possible differences in the 
+models by types of buyers, 
+Table \ref{tab:reg_TypeOfBuyer}
+shows the estimates for two separate models
+by type of buyer ownership.
+%
+Model 1 shows the estimates for 
+the full sample,
+Model 2 shows the estimates from the full model for 
+Owner Occupied Buyers
+and Model 4 and
+represents rental buyers. 
+% 
+Models 3 and 5 show the estimates from a reduced version of each model, 
+in which all coefficients are statistically significant. 
+% 
+The coefficients appear similar across the two subsamples.
+Notable differences include the statistical significance for 
+the indicators for number of beds, number of baths, a securit gate, transit score and garage.
+
+\input{../Tables/reg_TypeOfBuyer}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\clearpage
+\section{Sample Selection}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% \clearpage
+\subsection{Predicting the Selection into Samples}
+
+
+The specification in 
+Table \ref{tab:reg_bt_age}
+assumes a box tidwell functional form for
+the relationship between price and age, 
+without selecting into samples by type of buyer.
+% 
+To investigate this relationship further, 
+consider the set of variables that are related to
+whether or not the type of buyer is owner occupied or rental
+with the characteristics observed in the dataset. 
+
+\input{../Tables/reg_probit}
+
+Table \ref{tab:reg_probit} 
+shows the estimates for a probit model to predict the selection
+into samples by brand name.
+% 
+Model 1 in Table \ref{tab:reg_probit} 
+shows a preliminary probit model to predict the selection indicator,
+with all the other explanatory variables in the model.
+Owner Houses are more likely to have 2-4 bedrooms, 
+a garage, security gate, but less likely to have 2 bathrooms or a higher 
+transit score.
+
+% 
+Model 2 shows the result of a variable-reduction exercise
+to eliminate variables that are not statistically significant.
+These estimates provide a concise but useful model to
+indicate the houses that would be favored by owner occupied buyers.
+This model is used to specify the selection equation
+of the sample selection estimates investigated next. 
+ 
+% \clearpage
+\subsection{Estimating a Sample Selection Model}
+
+In this section, I will make a valiant attempt to fit 
+a sample selection model to the home sales data. 
+This exercise is useful because it illustrates a level of difficulty
+that is often encountered when conducting maximum likelihood estimation, 
+or any for of estimation that involves numeric optimization
+with a complex objective function. 
+
+% \clearpage
+\subsubsection{Sample Selection Model 1: Full Model}
+
+For a first model, I use the entire set of variables
+for both observation equations, for owner occupied and rentals.
+I specify the selection equation with the variables above
+from the probit model.
+
+
+\begin{lstlisting}[language=R]
+tobit_5_sel_1 <-
+   selection(selection = Owner ~
+               as.factor(NumBeds=='2') + 
+               as.factor(NumBeds=='3') + as.factor(NumBeds=='4') +
+               as.factor(NumBaths=='2') +
+               HasGarage + HasSecGate
+             + TransitScore,
+             outcome = list(log_Price_rental ~
+                              Age + NumBeds + NumBaths
+                            + LotSize + HasGarage + HasSecGate
+                            + TransitScore + bt_age_log_age,
+                            log_Price_owner ~
+                              Age + NumBeds + NumBaths
+                            + LotSize + HasGarage + HasSecGate
+                            + TransitScore + bt_age_log_age),
+             iterlim = 20,
+             method = '2step',
+             data = homeprices)
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=R]
+R> summary(tobit_5_sel_1)
+--------------------------------------------
+Tobit 5 model (switching regression model)
+2-step Heckman / heckit estimation
+1862 observations: 621 selection 1 (0) and 1241 selection 2 (1)
+42 free parameters (df = 1822)
+Probit selection equation:
+                               Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                    -0.80220    0.17676  -4.538 6.04e-06 ***
+as.factor(NumBeds == "2")TRUE   0.42161    0.18592   2.268   0.0235 *  
+as.factor(NumBeds == "3")TRUE   1.06384    0.20964   5.075 4.28e-07 ***
+as.factor(NumBeds == "4")TRUE   1.68911    0.24903   6.783 1.59e-11 ***
+as.factor(NumBaths == "2")TRUE -0.24855    0.09739  -2.552   0.0108 *  
+HasGarage                       1.80620    0.09809  18.414  < 2e-16 ***
+HasSecGate                      1.46611    0.18593   7.885 5.37e-15 ***
+TransitScore                   -0.12937    0.02149  -6.021 2.09e-09 ***
+Outcome equation 1:
+                 Estimate Std. Error t value Pr(>|t|)
+(Intercept)     1.230e+01         NA      NA       NA
+Age            -2.467e-02         NA      NA       NA
+NumBeds2        2.783e-02         NA      NA       NA
+NumBeds3        1.664e-01         NA      NA       NA
+NumBeds4        3.534e-01         NA      NA       NA
+NumBeds6        6.822e-01         NA      NA       NA
+NumBeds8               NA         NA      NA       NA
+NumBaths2       1.476e-01         NA      NA       NA
+NumBaths3       5.885e-02         NA      NA       NA
+LotSize         4.821e-05         NA      NA       NA
+HasGarage       9.135e-02         NA      NA       NA
+HasSecGate      1.261e-04         NA      NA       NA
+TransitScore    8.280e-02         NA      NA       NA
+bt_age_log_age  4.407e-03         NA      NA       NA
+Multiple R-Squared:0.6144,	Adjusted R-Squared:0.6055
+Outcome equation 2:
+                 Estimate Std. Error t value Pr(>|t|)
+(Intercept)    12.4656275         NA      NA       NA
+Age            -0.0360026         NA      NA       NA
+NumBeds2        0.2056778         NA      NA       NA
+NumBeds3        0.3379221         NA      NA       NA
+NumBeds4        0.5375074         NA      NA       NA
+NumBeds6        0.6692655         NA      NA       NA
+NumBeds8        1.0587016         NA      NA       NA
+NumBaths2       0.0574586         NA      NA       NA
+NumBaths3       0.0679249         NA      NA       NA
+LotSize         0.0000291         NA      NA       NA
+HasGarage       0.2604763         NA      NA       NA
+HasSecGate      0.2136549         NA      NA       NA
+TransitScore    0.0612350         NA      NA       NA
+bt_age_log_age  0.0065359         NA      NA       NA
+Multiple R-Squared:0.5947,	Adjusted R-Squared:0.5901
+   Error terms:
+               Estimate Std. Error t value Pr(>|t|)
+invMillsRatio1  0.10207         NA      NA       NA
+invMillsRatio2 -0.09401         NA      NA       NA
+sigma1          0.30703         NA      NA       NA
+sigma2          0.23509         NA      NA       NA
+rho1           -0.33245         NA      NA       NA
+rho2           -0.39988         NA      NA       NA
+--------------------------------------------
+\end{lstlisting}
+
+It returned NAs and the standard errors could not be calculated.
+Furthermore, when I toggled the \texttt{method = '2step'} commented line, 
+the situation did not improve, aside from returning the results from separate models as shown below. 
+\input{../Tables/selection_linear}
+% 
+
+
+\subsubsection{Sample Selection Model 2: Reduced Model from Separate Estimation}
+
+Instead of starting with a ``big-to-small'' approach,
+I reconsider the best models for each tractor brand group 
+that were recommended previously .
+I specify the selection equation with the variables above
+from the probit model.
+
+
+\begin{lstlisting}[language=R]
+tobit_5_sel_2 <-
+  selection(selection = Owner ~
+              as.factor(NumBeds=='2') + 
+              as.factor(NumBeds=='3') + as.factor(NumBeds=='4') +
+              as.factor(NumBaths=='2') +
+              HasGarage + HasSecGate
+            + TransitScore,
+            outcome = list(log_Price_rental ~
+                             Age #+ NumBeds 
+                           + as.factor(NumBaths=='2')
+                           + LotSize #+ HasGarage + HasSecGate
+                           + TransitScore + bt_age_log_age,
+                           log_Price_owner ~
+                             Age + NumBeds + NumBaths
+                           + LotSize + HasGarage + HasSecGate
+                           + TransitScore + bt_age_log_age),
+            iterlim = 20,
+            #method = '2step',
+            data = homeprices)
+
+\end{lstlisting}
+
+This time there were no error messages , 
+and the results were populated. 
+I obtained the data from Table \ref{tab:tobit_5_sel}. 
+All of the standard errors are there and all of the variables are significant.
+\input{../Tables/tobit_5_sel}
+
+I concede that the sample selection model has limited potential
+with this dataset. 
+
+\subsection{Discussion}
+
+Although this outcome works with no errors and all variables are significant, the model proves to be difficult and may prove some complexities.
+% 
+In the end, I did succeed in finding an optimum in which the estimates were somewhat defined. We concluded that two models may not be best in the past and I stand by that decision. Owner occupied houses call for more bedrooms and bathrooms, they also prefer security and pools but the variables can be similar with higher prices for owner occupied.
+The variables such as number of bedrooms may impact price but how much an investor is willing to spend on a house may be a factor as well.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

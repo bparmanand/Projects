@@ -1,0 +1,35 @@
+\begin{verbatim}
+Family: gaussian 
+Link function: identity 
+
+Formula:
+log_Price ~ s(Age) + s(LotSize) + s(TransitScore) + TypeOfBuyer + 
+    NumBeds + NumBaths + HasGarage + HasSecGate
+
+Parametric coefficients:
+                  Estimate Std. Error t value Pr(>|t|)    
+(Intercept)       12.66687    0.03019 419.567  < 2e-16 ***
+TypeOfBuyerRental  0.11042    0.01605   6.880 7.59e-12 ***
+NumBeds2           0.21419    0.02606   8.218 3.31e-16 ***
+NumBeds3           0.40513    0.03149  12.865  < 2e-16 ***
+NumBeds4           0.58441    0.03644  16.037  < 2e-16 ***
+NumBeds6           0.69712    0.05784  12.053  < 2e-16 ***
+NumBeds8           1.08605    0.06412  16.938  < 2e-16 ***
+NumBaths2          0.07120    0.01373   5.186 2.32e-07 ***
+NumBaths3          0.10819    0.02686   4.027 5.81e-05 ***
+HasGarage          0.25377    0.01974  12.856  < 2e-16 ***
+HasSecGate         0.22450    0.01785  12.576  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+                  edf Ref.df      F p-value    
+s(Age)          2.893  3.614 201.80  <2e-16 ***
+s(LotSize)      3.127  4.010  27.57  <2e-16 ***
+s(TransitScore) 2.989  3.756 126.22  <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =   0.68   Deviance explained = 68.3%
+GCV = 0.06425  Scale est. = 0.063731  n = 2473
+\end{verbatim}

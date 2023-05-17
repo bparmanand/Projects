@@ -1,0 +1,35 @@
+\begin{verbatim}
+Family: gaussian 
+Link function: identity 
+
+Formula:
+log_Price ~ s(Age) + LotSize + TransitScore + TypeOfBuyer + NumBeds + 
+    NumBaths + HasGarage + HasSecGate
+
+Parametric coefficients:
+                   Estimate Std. Error t value Pr(>|t|)    
+(Intercept)       1.206e+01  3.275e-02 368.273  < 2e-16 ***
+LotSize           3.606e-05  3.665e-06   9.839  < 2e-16 ***
+TransitScore      6.339e-02  2.963e-03  21.397  < 2e-16 ***
+TypeOfBuyerRental 1.145e-01  1.592e-02   7.195 8.24e-13 ***
+NumBeds2          2.201e-01  2.578e-02   8.535  < 2e-16 ***
+NumBeds3          4.191e-01  3.117e-02  13.447  < 2e-16 ***
+NumBeds4          6.070e-01  3.440e-02  17.648  < 2e-16 ***
+NumBeds6          6.992e-01  5.579e-02  12.532  < 2e-16 ***
+NumBeds8          1.076e+00  6.073e-02  17.720  < 2e-16 ***
+NumBaths2         7.248e-02  1.377e-02   5.264 1.53e-07 ***
+NumBaths3         1.078e-01  2.696e-02   3.997 6.59e-05 ***
+HasGarage         2.675e-01  1.925e-02  13.895  < 2e-16 ***
+HasSecGate        2.226e-01  1.789e-02  12.441  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Approximate significance of smooth terms:
+         edf Ref.df     F p-value    
+s(Age) 2.908  3.632 198.3  <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+R-sq.(adj) =  0.678   Deviance explained =   68%
+GCV = 0.064646  Scale est. = 0.06423   n = 2473
+\end{verbatim}

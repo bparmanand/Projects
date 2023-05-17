@@ -1,0 +1,98 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%\documentclass[11pt]{article}
+%\usepackage{fullpage}
+%\usepackage{color}
+%\begin{document}
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%{\noindent\bf Spring 2023 \hfill Brandon Parmanand}
+%\vskip 16pt
+%\centerline{\bf University of Central Florida}
+%\centerline{\bf College of Business }
+%\vskip 16pt
+%\centerline{\bf QMB 6912}
+%\centerline{\bf Capstone Project in Business Analytics}
+%\vskip 10pt
+%\centerline{\bf Problem Set \#4}
+%\vskip 32pt
+%\noindent
+% 
+%\section{Data Description}
+%% 
+%\medskip
+%\noindent
+%I start my analysis of the data in subsets according to type of buyer, which can be Owner-Occupied and Rental, 
+%calculating the summary statistics for each subset and present these 
+%statistics in the \LaTeX\ tables that follow. I first created a Log. Price variable and transformed the year built column in to age by subtracting from 2021 while also doing some minor cleanup of the data.
+%
+%\vfill
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\pagebreak
+\section{Summary of Variables by Type of Buyer}
+
+Table \ref{tab:summ_by_buyer} lists summary statistics for numeric variables
+in separate columns for subsamples defined by the type of buyer. There is some difference with different characteristics such as the range and mean of floor space and lot size are both smaller for rentals. Rentals have higher transit scores which could make sense as renters may try to be closer to work. Prices have a larger range with owner occupied properties but the average is lower with rental properties. Age intially seems to have minimal statistical signifcance to either type of buyer.
+
+\input{../Tables/summ_by_buyer}
+
+\pagebreak
+Table \ref{tab:ind_by_buyer} lists summary statistics for categorical variables
+in separate columns for subsamples defined by the type of buyer. It seems that 1 and 2 bedrooms are more within the rental buyer category than owner occupied and 1 bathrooms are most pevalent with rentals as well while 3 bathrooms are almost nonexistant in rentals.
+Interestingly, it's more common that rentals have agrage while owner occupied does not. Having a patio does not show any large variances with each type of buyer, so it would be interesting to see if this has any or not any significance with the model.
+
+\input{../Tables/ind_by_buyer}
+
+\pagebreak
+\section{Average Price by Buyer Type of Homes}
+
+Table \ref{tab:avg_price_by_amen} lists the average price for the indicator variables such as whether there is a pool, patio, garage, or a security gate, and whether it is owner occupied or a rental buyer.  I see that no matter a rental or owner occupied, having a garage, pool, patio, or security will always have a higher average house price. Also, owner occupied buyers mean the average sales price is higher than rental average except in the case that the rental has a garage.
+
+\input{../Tables/avg_price_by_amen}
+\medskip
+Table \ref{tab:avg_price_by_bed} lists the average price for the number of bedrooms and whether it is owner occupied or a rental buyer.  Interestingly, rental properties have higher average prices for 1 bedroom and 3 bedrooms houses.
+
+\input{../Tables/avg_price_by_bed}
+\medskip
+Table \ref{tab:avg_price_by_bath} lists the average price for the number of bathrooms and whether it is owner occupied or a rental buyer.  Rental average sales price are lower for each number of bathrooms. Notably, there is a big variance in 1 bath homes for both owner occupied and rental, with rental types being significantly lower.
+
+\input{../Tables/avg_price_by_bath}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\pagebreak
+\section{Correlation Matrices}
+We plot the correlation between home prices and numerical variables. 
+Table \ref{tab:correlation_num} shows the correlation 
+between the log.~of house sale prices
+and the numeric variables Floor Space, Lot Size, Transit Score, School score, and age.%
+All variables are positively correlated with prices with the exception of Age. Transit score is also not heavily correlated with the price with a coefficient of 0.120.
+
+
+% \input{../Tables/correlation_ind}
+\input{../Tables/correlation_num}
+
+We plot the correlation between home prices and categorixal variables. 
+Table \ref{tab:correlation_ind} shows the correlation 
+between the log.~of house sale prices
+and the categorical variables including Number of Beds, Number of Baths, whether it has a garage, pool, patio, and security gate.
+All variables are positively correlated with prices. Whether it has a pool is not heavily correlated with the price with a coefficient of 0.09.
+
+
+\input{../Tables/correlation_ind}
+
+
+
+
+
+%\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
