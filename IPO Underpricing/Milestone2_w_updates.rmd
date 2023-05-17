@@ -1,0 +1,146 @@
+---
+title: "Milestone 2"
+author: "Brandon Parmanand"
+date: '2022-10-23'
+output: html_document
+---
+## Updates from Milestone 1
+### THe chosen variables included the following
+### IPO DATE (ipo_date)
+### IPO SHARES (ipo_shares)
+### IPO PRICE (ipo_price)
+### AUDITOR NAME AT IPO DATE (aud_name_ipo_date)
+### MATCHQU TOTAL SHARES OUTSTANDING (matchqu_tso)
+### MATCHQU BALSH BOOK VALUE (matchqu_balsh_book_val)
+### MATCHQU BALSH TOTAL ASSETS (matchqu_balsh_assets)
+### MATCHQU INCMST REVENUE TTM (matchqu_incmst_rev_ttm)
+### MATCHQU INCMST NET INCOME TTM (matchqu_incmst_netinc_ttm)
+### MATCHQU INCMST EBITDA QTR (matchqu_incmst_ebitda_qtr)
+### MATCHQU CSHFLST CASH FROM OPERATING ACTIVITIES TTM (matchqu_cshflst_op_act_ttm)
+### PRIORQU INCMST EXTRAORDINARY ITEMS TTM (priorqu_incmst_extraitm_ttm)
+### MATCHFY DATE QTR (matchfy_date_qtr)
+### BUS STATE (bus_state)
+### NASDAQ COMPOSITE (is_in_nasdaq_composite)
+### DJIA 30 (is_in_djia30)
+### RUSSELL 2000 (is_in_russell_2000)
+### IPO DESCRIPTION (ipo_desc)
+### MATCHQU PRICE CLOSE (matchqu_price_close)
+### IPO TYPE (ipo_type)
+### SP INDEX (is_in_sp500
+### EGC IS EMERGING COMPANY (egc_is_emerging_company)
+### CURRENT PRICE DATE (curr_pr_date)
+### CURRENT PRICE CLOSE (curr_price_close)
+### CURRENT TOTAL SHARES OUTSTANDING (curr_tso)
+### CURRENT TOTAL SHARES OUTSTANDING MARKET CAP (curr_tso_mc)
+### After doing some initial data exploration, I dropped the MATCHFY DATE QTR and PRIORQU INCMST EXTRAORDINARY ITEMS TTM variables due to it having an excessive amount NA values. Additionally, I omitted the current price and shares due to wanting to focus on a one point in time look at the data instead of over time. Once removing empty columns, whether the IPO was in the DJIA 30 was also removed as there was no data. I additionally added back in State Region such as the regional part of the US where the corporation is located and also business state country to perhaps look at the effect of underprcing from geographical locations.
+
+## Correlation Matrix
+### Looking at the correlation matrix, there is mostly not a lot of correlation between the independent variables. Some notable correlation include a negative correlation between Book Value and  Assets, EBITDA, and Cash flow from operating income.
+### EBITDA and Net Income are highly correlated at a rate of 0.85. With it being significantly greater than 0.7, i would omit one from the model. IPO shares and TSO for the end of the quarter along with IPO price and quarter price have a signifcant positive correlation.All of the financial metrics such as Revenue and net income, etc have higher correlations with each other.
+
+## Skewness
+### Underpricing seems to be slightly skewed but still has a bell shape. However book value and assets dont seem to be skewed from histograms. Future checkpoint may be to analyze book value more
+
+## Issues/Future
+### Some issues that I need to dive into is ensuring I am looking at the problem from a single point in time. Verification that 451 observations out of 1996 is enough. I will also be looking more into the categorical/qualitative variables prior to setting up the model. Some dummy variables will need to be made for some variables and perhaps doing more data exploration into the geography of the IPOs. Also adding more statistics for example a shapiro test to look at the distribution. 
+
+
+```{r include=FALSE}
+rm(list=ls(all=TRUE))
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(MASS) 
+library(reshape2) 
+library(reshape) 
+library(corrplot)
+```
+
+```{r}
+
+
+
+setwd("~/GitHub/Strategy")
+IPO_raw_df <- read.csv('IPOdataForClass.csv')
+
+empty_columns <- colSums(is.na(IPO_raw_df) | IPO_raw_df == 0) == nrow(IPO_raw_df)
+cleanup_df <- IPO_raw_df[, !empty_columns]
+
+IPO_df <- cleanup_df[, c(2, 6:8, 12:13, 21, 23, 30:31, 34, 36, 39,
+                                  42, 67, 83, 196, 228, 230, 231,
+                                  242:244, 341)]
+
+colnames(IPO_df)
+
+summary(IPO_df$MATCHFY_DATE_QTR)
+summary(IPO_df$IPO_DATE)
+IPO_df$MATCHFY_DATE_QTR <- as.Date(strptime(IPO_df$MATCHFY_DATE_QTR, 
+                                            format = "%d/%m/%Y"))
+summary(IPO_df$MATCHFY_DATE_QTR)
+
+sapply(IPO_df, function(x) sum(is.na(x)))
+
+# removing PRIORQU_INCMST_EXTRAITM_TTM and MATCHQU_DATE_QTR due to many NAs
+
+IPO_df <- IPO_df[, -c(15:16)]
+colnames(IPO_df)
+sapply(IPO_df, function(x) sum(is.na(x)))
+IPO_df <- IPO_df[, -c(8:9, 13)]
+
+IPO_df_1 <- na.omit(IPO_df)
+sapply(IPO_df_1, function(x) sum(is.na(x)))
+IPO_df_num <- dplyr::select_if(IPO_df_1, is.numeric)
+
+#IPO_df_num <- na.omit(IPO_df_num)
+
+corr_matrix <- round(cor(IPO_df_num),2)
+print(corr_matrix)
+
+
+corr_matrix <- melt(corr_matrix)
+
+ggplot(data = corr_matrix, aes(x=X1, y=X2, fill=value)) + 
+  geom_tile() + geom_text(aes(x=X1, y=X2, label=value))+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+# 
+# ggpairs(IPO_df_num,
+#         aes(alpha=1),
+#         title = "IPO & Economic Data Cor & Dis Plots")
+
+
+library(vtable)
+st(IPO_df_1)
+
+hist(IPO_df_1$Underpricing)
+hist(IPO_df_1$MATCHQU_BALSH_ASSETS)
+#hist(IPO_df_1$MATCHQU_BALSH_BOOK_VAL)
+
+```
+
+### Removing MATCHQU_TSO due to duplicate of ipo shares
+### Removing MATCHQU BALSH_BOOK_VAL to high amounts of NAs
+### Removing EBITDA since it is highly correlated with Net income but has more NAs
+### Now have 874 observations remaining
+### Potentially split into training and validation training sets for final project
+
+
+```{r}
+colnames(IPO_df_1)
+reg <- lm(Underpricing ~ IPO_DATE + IPO_SHARES + IPO_PRICE + AUD_NAME_IPO_DATE + IPO_DESC + MATCHQU_PRICE_CLOSE + MATCHQU_BALSH_ASSETS + MATCHQU_INCMST_REV_TTM + MATCHQU_INCMST_NETINC_TTM + MATCHQU_CSHFLST_OP_ACT_TTM + IPO_TYPE + BUS_STATE + BUS_STATE_REGION + BUS_STATE_COUNTRY + IS_IN_SP500 + IS_IN_NASDAQ_COMPOSITE + IS_IN_RUSSELL_2000 + EGC_IS_EMERGING_COMPANY, data = IPO_df_1)
+
+library(olsrr)
+ols_step_forward_p(reg, details = FALSE)
+ols_step_backward_p(reg, details = FALSE)
+ols_step_both_p(reg, details = FALSE)
+
+reg_fwd <- lm(Underpricing ~ MATCHQU_PRICE_CLOSE + IPO_PRICE + IPO_DESC + AUD_NAME_IPO_DATE + IS_IN_RUSSELL_2000 + BUS_STATE + IPO_SHARES + IS_IN_SP500 + IPO_TYPE + EGC_IS_EMERGING_COMPANY + IPO_DATE, data = IPO_df_1
+)
+reg_bwd <- lm(Underpricing ~ IPO_DATE + IPO_SHARES + IPO_PRICE + AUD_NAME_IPO_DATE + IPO_DESC + MATCHQU_PRICE_CLOSE + IPO_TYPE + BUS_STATE + BUS_STATE_REGION + BUS_STATE_COUNTRY + IS_IN_SP500 + IS_IN_RUSSELL_2000 + EGC_IS_EMERGING_COMPANY, data = IPO_df_1)
+summary(reg)
+summary(reg_bwd)
+summary(reg_fwd)
+```
+
+
+

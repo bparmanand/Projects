@@ -1,0 +1,116 @@
+---
+title: "Milestone 3"
+author: "Brandon Parmanand"
+date: '2022-10-23'
+output: html_document
+---
+## Updates from Milestone 2
+#### I removed the variable MATCHQU_TSO due to it being a near duplicate of IPO shares but with a few NA values. I also removed the variable MATCHQU BALSH_BOOK_VAL due to the high amount NAs included in the data and removed EBITDA due to the high correlation with Net Income. There is now 874 observations of 19 variables in the updated data frame.
+
+## Comments on Linear Model
+#### I ran the linear regression model with the 18 variables on Underpricing. This led to R-squared value of 0.4676 where 46.76% of underpricing variability is determined by the included variables. Once running both the OLS Forward stepwise and backward stepwise models, they both ended with a 0.4657 R-squared. THis determined that the simplified models are statistically better due to fewer variables needed but final model included the forward model with 11 variables which was the least of the three models.
+
+
+#### For the final model, I will split the final data frame into training and validation data sets to be able to validate the regression model
+
+
+
+```{r include=FALSE}
+rm(list=ls(all=TRUE))
+library(tidyverse)
+library(ggplot2)
+library(GGally)
+library(MASS) 
+library(reshape2) 
+library(reshape) 
+library(corrplot)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+
+
+
+setwd("~/GitHub/Strategy")
+IPO_raw_df <- read.csv('IPOdataForClass.csv')
+
+empty_columns <- colSums(is.na(IPO_raw_df) | IPO_raw_df == 0) == nrow(IPO_raw_df)
+cleanup_df <- IPO_raw_df[, !empty_columns]
+
+IPO_df <- cleanup_df[, c(2, 6:8, 12:13, 21, 23, 30:31, 34, 36, 39,
+                                  42, 67, 83, 196, 228, 230, 231,
+                                  242:244, 341)]
+
+colnames(IPO_df)
+
+summary(IPO_df$MATCHFY_DATE_QTR)
+summary(IPO_df$IPO_DATE)
+IPO_df$MATCHFY_DATE_QTR <- as.Date(strptime(IPO_df$MATCHFY_DATE_QTR, 
+                                            format = "%d/%m/%Y"))
+summary(IPO_df$MATCHFY_DATE_QTR)
+
+sapply(IPO_df, function(x) sum(is.na(x)))
+
+# removing PRIORQU_INCMST_EXTRAITM_TTM and MATCHQU_DATE_QTR due to many NAs
+
+IPO_df <- IPO_df[, -c(15:16)]
+colnames(IPO_df)
+sapply(IPO_df, function(x) sum(is.na(x)))
+IPO_df <- IPO_df[, -c(8:9, 13)]
+
+IPO_df_1 <- na.omit(IPO_df)
+sapply(IPO_df_1, function(x) sum(is.na(x)))
+IPO_df_num <- dplyr::select_if(IPO_df_1, is.numeric)
+
+#IPO_df_num <- na.omit(IPO_df_num)
+
+corr_matrix <- round(cor(IPO_df_num),2)
+print(corr_matrix)
+
+
+corr_matrix <- melt(corr_matrix)
+
+ggplot(data = corr_matrix, aes(x=X1, y=X2, fill=value)) + 
+  geom_tile() + geom_text(aes(x=X1, y=X2, label=value))+
+  theme(axis.text.x = element_text(angle = 45, hjust=1))
+
+# 
+# ggpairs(IPO_df_num,
+#         aes(alpha=1),
+#         title = "IPO & Economic Data Cor & Dis Plots")
+
+
+library(vtable)
+st(IPO_df_1)
+
+hist(IPO_df_1$Underpricing)
+hist(IPO_df_1$MATCHQU_BALSH_ASSETS)
+#hist(IPO_df_1$MATCHQU_BALSH_BOOK_VAL)
+
+```
+
+
+
+
+```{r message=FALSE, warning=FALSE}
+colnames(IPO_df_1)
+reg <- lm(Underpricing ~ IPO_DATE + IPO_SHARES + IPO_PRICE + AUD_NAME_IPO_DATE + IPO_DESC + MATCHQU_PRICE_CLOSE + MATCHQU_BALSH_ASSETS + MATCHQU_INCMST_REV_TTM + MATCHQU_INCMST_NETINC_TTM + MATCHQU_CSHFLST_OP_ACT_TTM + IPO_TYPE + BUS_STATE + BUS_STATE_REGION + BUS_STATE_COUNTRY + IS_IN_SP500 + IS_IN_NASDAQ_COMPOSITE + IS_IN_RUSSELL_2000 + EGC_IS_EMERGING_COMPANY, data = IPO_df_1)
+
+library(olsrr)
+ols_step_forward_p(reg, details = FALSE)
+ols_step_backward_p(reg, details = FALSE)
+ols_step_both_p(reg, details = FALSE)
+
+reg_fwd <- lm(Underpricing ~ MATCHQU_PRICE_CLOSE + IPO_PRICE + IPO_DESC + AUD_NAME_IPO_DATE + IS_IN_RUSSELL_2000 + BUS_STATE + IPO_SHARES + IS_IN_SP500 + IPO_TYPE + EGC_IS_EMERGING_COMPANY + IPO_DATE, data = IPO_df_1
+)
+reg_bwd <- lm(Underpricing ~ IPO_DATE + IPO_SHARES + IPO_PRICE + AUD_NAME_IPO_DATE + IPO_DESC + MATCHQU_PRICE_CLOSE + IPO_TYPE + BUS_STATE + BUS_STATE_REGION + BUS_STATE_COUNTRY + IS_IN_SP500 + IS_IN_RUSSELL_2000 + EGC_IS_EMERGING_COMPANY, data = IPO_df_1)
+```
+
+
+
+
+```{r include=FALSE}
+summary(reg)
+summary(reg_bwd)
+summary(reg_fwd)
+```
+

@@ -1,0 +1,260 @@
+---
+title: "Assignment_2"
+author: "Brandon Parmanand"
+date: "04-1-2023"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup,include=FALSE}
+
+# Clear workspace.
+rm(list=ls(all=TRUE))
+
+# Set working directory
+wd_path <- '~/GitHub/Advanced_Data_Analytical_Methodology/Project'
+setwd(wd_path)
+
+# Load necessary packages
+# library(partykit)
+# library(rpart)
+# library(rpart.plot)
+library(tidyverse) 
+library(ggplot2)
+library(xgboost)
+library(randomForest)
+#library(MASS)
+library(cluster) 
+library(factoextra)
+library(tokenizers)
+library(caret)
+#install.packages()
+```
+
+### Heart disease is one of the leading causing of death in the world. There are risk factors associated with developing heart disease or facotrs that when people are already with heart disease. In this project we will look at some factors associated with heart disease and see if we are able to predict heart disease The dataset was obtained from Data obtained from https://www.kaggle.com/datasets/fedesoriano/heart-failure-prediction which was released in 2021. Here are the variables we are working with with Heart Disease being the dependent variable.
+
+#### Age: age of the patient [years]
+#### Sex: sex of the patient [M: Male, F: Female]
+#### ChestPainType: chest pain type [TA: Typical Angina, ATA: Atypical Angina, NAP: Non-Anginal Pain, ASY: Asymptomatic]
+#### RestingBP: resting blood pressure [mm Hg]
+#### Cholesterol: serum cholesterol [mm/dl]
+#### FastingBS: fasting blood sugar [1: if FastingBS > 120 mg/dl, 0: otherwise]
+#### RestingECG: resting electrocardiogram results [Normal: Normal, ST: having ST-T wave abnormality (T wave inversions and/or ST elevation or depression of > 0.05 mV), LVH: showing probable or definite left ventricular hypertrophy by Estes' criteria]
+#### MaxHR: maximum heart rate achieved [Numeric value between 60 and 202]
+#### ExerciseAngina: exercise-induced angina [Y: Yes, N: No]
+#### Oldpeak: oldpeak = ST [Numeric value measured in depression]
+#### ST_Slope: the slope of the peak exercise ST segment [Up: upsloping, Flat: flat, Down: downsloping]
+#### HeartDisease: output class [1: heart disease, 0: Normal]
+
+### First I will read in the data and see if there is any cleaning needed.
+```{r}
+
+
+heart_data<-read.csv("heart.csv", stringsAsFactors = TRUE)
+str(heart_data)
+summary(heart_data)
+# Cholesterol nor resting heart rate cannot be 0, will need to remove those observations
+heart_data$Cholesterol[heart_data$Cholesterol==0] <- NA
+heart_data$RestingBP[heart_data$RestingBP==0] <- NA
+# Need to change Fasting BC and Heart Disease to factors
+heart_data$HeartDisease <- as.factor(heart_data$HeartDisease)
+heart_data$FastingBS <- as.factor(heart_data$FastingBS)
+
+sum(is.na(heart_data))
+heart_data <- na.omit(heart_data)
+sum(is.na(heart_data))
+summary(heart_data)
+
+t.test(heart_data$Age ~ heart_data$HeartDisease)
+pval <- t.test(heart_data$Age ~ heart_data$HeartDisease)$p.value
+pval
+pval < 0.05
+
+#The p-value is less than 0.05 on a 0.95 confidence interval. Reject the null hypotheses that there is strong statistical difference both outcomes. 
+
+
+set.seed(12345)
+train.index <- sample(row.names(heart_data), 0.8*dim(heart_data)[1])
+test.index <- setdiff(row.names(heart_data), train.index)
+train.df <- heart_data[train.index, ]
+test.df <- heart_data[test.index, ]
+
+```
+### Cholesterol and Resrting Heart Rate included values of 0 which is not possible for a living person. I turned these into NA and removed the NAs from the data. I also ran the data with strings as factors.Here I also broke the data out into training and testing dataset using 80% for training and the remaining 20% for testing/validation. 
+
+### Data Exploration
+
+```{r}
+library(ggpubr)
+Age_plot <- ggplot(heart_data, aes(HeartDisease, Age)) +
+  geom_point() + ggtitle("Age") + theme(plot.title=element_text(size=8,hjust = 0.5))
+Age_plot
+
+Chol_plot <- ggplot(heart_data, aes(HeartDisease, Cholesterol)) +
+  geom_point() + ggtitle("Cholesterol") + theme(plot.title=element_text(size=8,hjust = 0.5))
+Chol_plot
+
+BP_plot <- ggplot(heart_data, aes(HeartDisease, RestingBP)) +
+  geom_point() + ggtitle("RestingBP") + theme(plot.title=element_text(size=8,hjust = 0.5))
+BP_plot
+
+ST_plot <- ggplot(heart_data, aes(HeartDisease, Oldpeak)) +
+  geom_point() + ggtitle("Oldpeak") + theme(plot.title=element_text(size=8,hjust = 0.5))
+ST_plot
+figure <- ggarrange(Age_plot, Chol_plot, BP_plot, ST_plot,
+                    #labels = c("Age" ,"Cholesteral", "BP", "Oldpeak"),
+                    ncol = 2, nrow = 2)
+figure
+
+```
+
+### As expected, we see people with Heart disease are slightly older than people without heart disease. The same goes for cholesterol, resting BP and Oldpeak (which is ST depressions induced by exercise on the ECG) with more on the higher end of the scale.
+## Statistical Models
+### Logistic Regression
+```{r}
+
+log1 <- glm(HeartDisease ~ Age + Sex + ChestPainType + RestingBP + Cholesterol + FastingBS + RestingECG ++ MaxHR + ExerciseAngina + Oldpeak + ST_Slope,
+            data = train.df, family = binomial(link = 'logit'))
+summary(log1)
+
+library(MASS)
+result = stepAIC(log1, trace=1, direction="backward")
+print(result)
+result$anova
+
+# AIC is reduced from 415 to 412. Marginal difference and simplified model is better, removed Max HR, Resting ECG and Fasting BS
+
+logistic <- glm(HeartDisease ~ Age + Sex + ChestPainType + RestingBP + Cholesterol + ExerciseAngina + Oldpeak + ST_Slope,
+    data = train.df, family = binomial(link = 'logit'))
+
+
+pdata <- predict(logistic, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+confusionMatrix(pdata, test.df$HeartDisease)
+
+#test.df$LogPred <- pdata
+
+
+```
+
+#### I first ran the logistic model with all variables with an AIC score of 415. I used the setpAIC Backward model to estimate a reduced model which removed the Max Heart rate, Resting ECG, and Fasting Blood sugar variables. THe AIC difference was marginal with an AIC of 412 for the simplified model. In this case I chose to move ahead with the simplified model to predict heart disease.
+
+### Decision tree
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+set.seed(12345)
+
+
+dec_tree <- rpart(HeartDisease ~., data = train.df)
+#rpart.plot(dec_tree)
+rpart.plot(dec_tree)
+summary(dec_tree)
+library(ggplot2)
+
+
+tree_pred = predict(dec_tree,
+                          newdata = test.df,
+                          type = "prob")[, 2]
+tree_pred <- ifelse(tree_pred>0.5, 1, 0)
+tree_pred <- as.factor(tree_pred)
+confusionMatrix(tree_pred, test.df$HeartDisease)
+
+
+```   
+
+### XGboost
+
+```{r}
+data = heart_data
+
+unique( data$HeartDisease )
+
+ratioNoHeartDisease = sum( data$HeartDisease == 0 ) / sum( data$HeartDisease == 1 )
+ratioNoHeartDisease
+
+library('Matrix')
+
+
+
+data_mat = sparse.model.matrix(HeartDisease ~ . -HeartDisease, data=data )#notice the minus HeartDisease which is the dependent
+
+library(caret)
+
+set.seed(12345)
+
+training_Inds = createDataPartition( data$HeartDisease , p=0.8 , list=FALSE , times=1 )
+testing_Inds = seq( 1 , length(data$HeartDisease) )[ -training_Inds ]
+training_Inds = as.vector(training_Inds)
+testing_Inds = as.vector(testing_Inds)
+print( paste('training inds len=',length(training_Inds),
+             'testing inds len=',length(testing_Inds)) )
+
+
+
+dim(data_mat)             
+
+y = as.matrix( data[,c("HeartDisease")] )
+x = data_mat
+
+xtrain = x[ training_Inds , ]
+ytrain = y[ training_Inds ]
+xtest = x[ testing_Inds , ]
+ytest = y[ testing_Inds ]
+
+
+
+library(xgboost)
+
+param = list(objective = "binary:logistic", 
+             eval_metric = "error", # "error", error is the ratio of (wrong classes/all classes)
+             scale_pos_weight = ratioNoHeartDisease,
+             max_depth = 6,
+             eta = 0.025, 
+             colsample_bytree = 0.5, 
+             min_child_weight = 1)
+
+
+
+nrounds = 30
+xgb = xgboost(params = param, 
+              data = xtrain, 
+              label = ytrain, 
+              nrounds = nrounds,
+              verbose = 1,
+              verbosity = 1)            
+
+
+PredictionsHeartDisease = predict( xgb , xtest ) 
+
+PredictionsHeartDisease = ifelse( PredictionsHeartDisease > 0.5 , 1 , 0 )
+
+
+
+confusionMatrix(table(PredictionsHeartDisease, ytest))
+
+
+
+``` 
+
+### The logistic regression had an Accuracy of .8733.
+### The decision tree had and aAccuracy of .8067
+### The XGboost model had an Accuracy of .8322
+### In order to predict heart disease in patients, the logistic model has the highest accuracy.
+
+```{r}
+LogPred <-test.df
+LogPred$LogPred <- pdata
+head(LogPred)
+
+Dec_Pred <- test.df
+Dec_Pred$Dec_Pred <- tree_pred
+head(Dec_Pred)
+
+
+```

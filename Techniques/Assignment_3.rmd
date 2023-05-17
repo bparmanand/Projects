@@ -1,0 +1,523 @@
+---
+title: "Assignment_2"
+author: "Brandon Parmanand"
+date: "03-19-2023"
+output:
+  html_document: default
+  pdf_document: default
+---
+## Workplace Setup
+```{r setup}
+# Clear workspace.
+rm(list=ls(all=TRUE))
+
+# Set working directory
+wd_path <- '~/GitHub/Advanced_Data_Analytical_Methodology/Assignment_3'
+setwd(wd_path)
+
+# Load necessary packages
+# library(partykit)
+# library(rpart)
+# library(rpart.plot)
+# install.packages("tidyverse")
+# library(tidyverse) 
+# library(ggplot2)
+# library(xgboost)
+# library(randomForest)
+# #library(MASS)
+# library(cluster) 
+# library(factoextra)
+# library(tokenizers)
+```
+
+## Question 1
+
+### 1. Load the data and place the data into a dataframe. 
+```{r}
+library(jsonlite)
+iris <- fromJSON("./iris.json")
+head(iris)
+sum(is.na(iris))
+```
+
+### 2. Perform K-means clustering on the odd data entries. Use the clustering produced to predict the flower label types (species) from the even entries reporting the accuracy percentage.
+
+```{r}
+row_odd <- seq_len(nrow(iris)) %% 2   
+odd_data <- iris[row_odd == 1, ]  
+even_data <- iris[row_odd == 0, ] 
+# validate that data was in fact split between even and odd
+head(even_data)
+head(odd_data)
+data <- (odd_data[,1:4])
+data <- scale(data)
+data <- as.data.frame(data)
+library(factoextra)
+library(cluster)
+
+fviz_nbclust(data, kmeans, method = "wss")
+
+# We see the sharpest flat line after k=3 clusters so therefore I will choose 3 as the optimal number of clusters.
+
+set.seed(12345)
+kmeans <- kmeans(data, centers = 3)
+fviz_cluster(kmeans, data = data)
+
+```
+
+
+## Question 2
+
+### Load Data
+```{r}
+
+lung<-read.csv("surveyLungCancer.csv", stringsAsFactors = TRUE)
+summary(lung$LUNG_CANCER)
+lung$LUNG_CANCER <- ifelse(lung$LUNG_CANCER=="YES", 1, 0)
+lung$LUNG_CANCER <- as.factor(lung$LUNG_CANCER)
+summary(lung$LUNG_CANCER)
+
+```
+
+### 1. With logistic regression, Decision Trees, Random Forests, and XGBoost determine which are the 2 most useful variables to predict Lung Cancer and report on the accuracy for each model and then the accuracy when all the variables can be used. (use 70/30 training testing split)
+```{r}
+set.seed(12345)
+train.index <- sample(row.names(lung), 0.7*dim(lung)[1])
+test.index <- setdiff(row.names(lung), train.index)
+train.df <- lung[train.index, ]
+test.df <- lung[test.index, ]
+
+
+```
+
+```{r}
+#Logistic
+
+logistic <- glm(LUNG_CANCER ~ ., family = binomial(), train.df)
+summary(logistic)
+
+
+pdata <- predict(logistic, newdata = test.df, type = "response")
+pdata <- ifelse(pdata>0.5, 1, 0)
+pdata <- as.factor(pdata)
+
+library(caret)
+confusionMatrix(pdata, test.df$LUNG_CANCER)
+
+logistic2 <- glm(LUNG_CANCER ~ ALCOHOL.CONSUMING + PEER_PRESSURE, family = binomial(), train.df)
+summary(logistic2)
+
+pdata2 <- predict(logistic2, newdata = test.df, type = "response")
+pdata2 <- ifelse(pdata2>0.5, 1, 0)
+pdata2 <- as.factor(pdata2)
+
+library(caret)
+confusionMatrix(pdata2, test.df$LUNG_CANCER)
+
+
+
+
+```
+### The two most useful variables was Peer Pressure and Alcohol Consuming. When using just those two variables on the test data, we only get 83.87 accuracy. When we look at all the variables, we see 91.5% accuracy.
+
+```{r}
+library(rpart)
+library(rpart.plot)
+set.seed(12345)
+
+
+dec_tree <- rpart(LUNG_CANCER ~., data = train.df)
+#rpart.plot(dec_tree)
+rpart.plot(dec_tree)
+summary(dec_tree)
+library(ggplot2)
+
+
+tree_pred = predict(dec_tree,
+                    newdata = test.df,
+                    type = "prob")[, 2]
+tree_pred <- ifelse(tree_pred>0.5, 1, 0)
+tree_pred <- as.factor(tree_pred)
+confusionMatrix(tree_pred, test.df$LUNG_CANCER)
+
+dec_tree2 <- rpart(LUNG_CANCER ~ SHORTNESS.OF.BREATH + AGE, data = train.df)
+#rpart.plot(dec_tree)
+rpart.plot(dec_tree2)
+summary(dec_tree2)
+
+tree_pred2 = predict(dec_tree2,
+                    newdata = test.df,
+                    type = "prob")[, 2]
+tree_pred2 <- ifelse(tree_pred>0.5, 1, 0)
+tree_pred2 <- as.factor(tree_pred)
+confusionMatrix(tree_pred2, test.df$LUNG_CANCER)
+
+
+```
+### For Decision trees, we do not see a change of an accuracy of 83.87% when using all variables or only two most useful variables (shortness of breath and age) against the testing data set.
+
+```{r}
+library(randomForest)
+library(dplyr)
+train_x<-train.df[,c(1:15)]
+train_y<-train.df$LUNG_CANCER
+rf<-randomForest(x=train_x,y=train_y,
+                 ntree = 500,importance=TRUE)
+test_x<-test.df[,c(1:15)]
+test_y<-test.df$LUNG_CANCER
+actual_values = test_y
+pred_values = predict(rf,test_x)
+cm = table(pred_values,actual_values)
+confusionMatrix(cm)
+
+varImp(rf)%>%data.frame()%>%arrange(-X1)
+
+train_x<-train.df[,c(11,6)]
+train_y<-train.df$LUNG_CANCER
+rf<-randomForest(x=train_x,y=train_y,
+                 ntree = 500,importance=TRUE)
+test_x<-test.df[,c(11,6)]
+test_y<-test.df$LUNG_CANCER
+actual_values = test_y
+pred_values = predict(rf,test_x)
+cm = table(pred_values,actual_values)
+confusionMatrix(cm)
+
+```
+
+
+### The random forest had the same variable importance as the logistic model. It also had the same accuracy for the two most useful variables as the decision tree.
+
+
+
+```{r}
+
+data = lung
+
+unique( data$LUNG_CANCER )
+
+ratioNoLUNG_CANCER = sum( data$LUNG_CANCER == 0 ) / sum( data$LUNG_CANCER == 1 )
+ratioNoLUNG_CANCER
+
+library('Matrix')
+
+
+
+data_mat = sparse.model.matrix(LUNG_CANCER ~ . -LUNG_CANCER, data=data )#notice the minus LUNG_CANCER which is the dependent
+
+library(caret)
+
+set.seed(12345)
+
+training_Inds = createDataPartition( data$LUNG_CANCER , p=0.7 , list=FALSE , times=1 )
+testing_Inds = seq( 1 , length(data$LUNG_CANCER) )[ -training_Inds ]
+training_Inds = as.vector(training_Inds)
+testing_Inds = as.vector(testing_Inds)
+print( paste('training inds len=',length(training_Inds),
+             'testing inds len=',length(testing_Inds)) )
+
+
+
+dim(data_mat)             
+
+y = as.matrix( data[,c("LUNG_CANCER")] )
+x = data_mat
+
+xtrain = x[ training_Inds , ]
+ytrain = y[ training_Inds ]
+xtest = x[ testing_Inds , ]
+ytest = y[ testing_Inds ]
+
+
+
+library(xgboost)
+
+param = list(objective = "binary:logistic", 
+             eval_metric = "error", # "error", error is the ratio of (wrong classes/all classes)
+             scale_pos_weight = ratioNoLUNG_CANCER,
+             max_depth = 6,
+             eta = 0.025, 
+             colsample_bytree = 0.5, 
+             min_child_weight = 1)
+
+
+
+nrounds = 30
+xgb = xgboost(params = param, 
+              data = xtrain, 
+              label = ytrain, 
+              nrounds = nrounds,
+              verbose = 1,
+              verbosity = 1)            
+
+
+PredictionsLUNG_CANCER = predict( xgb , xtest ) 
+
+PredictionsLUNG_CANCER = ifelse( PredictionsLUNG_CANCER > 0.5 , 1 , 0 )
+
+confusionMatrix(table(PredictionsLUNG_CANCER, ytest))
+
+### with two variables now
+data = lung
+data <-data [,c(11,6,16)]
+
+unique( data$LUNG_CANCER )
+
+ratioNoLUNG_CANCER = sum( data$LUNG_CANCER == 0 ) / sum( data$LUNG_CANCER == 1 )
+ratioNoLUNG_CANCER
+
+library('Matrix')
+
+
+
+data_mat = sparse.model.matrix(LUNG_CANCER ~ . -LUNG_CANCER, data=data )#notice the minus LUNG_CANCER which is the dependent
+
+library(caret)
+
+set.seed(12345)
+
+training_Inds = createDataPartition( data$LUNG_CANCER , p=0.7 , list=FALSE , times=1 )
+testing_Inds = seq( 1 , length(data$LUNG_CANCER) )[ -training_Inds ]
+training_Inds = as.vector(training_Inds)
+testing_Inds = as.vector(testing_Inds)
+print( paste('training inds len=',length(training_Inds),
+             'testing inds len=',length(testing_Inds)) )
+
+
+
+dim(data_mat)             
+
+y = as.matrix( data[,c("LUNG_CANCER")] )
+x = data_mat
+
+xtrain = x[ training_Inds , ]
+ytrain = y[ training_Inds ]
+xtest = x[ testing_Inds , ]
+ytest = y[ testing_Inds ]
+
+
+
+library(xgboost)
+
+param = list(objective = "binary:logistic", 
+             eval_metric = "error", # "error", error is the ratio of (wrong classes/all classes)
+             scale_pos_weight = ratioNoLUNG_CANCER,
+             max_depth = 6,
+             eta = 0.025, 
+             colsample_bytree = 0.5, 
+             min_child_weight = 1)
+
+
+
+nrounds = 30
+xgb = xgboost(params = param, 
+              data = xtrain, 
+              label = ytrain, 
+              nrounds = nrounds,
+              verbose = 1,
+              verbosity = 1)            
+
+
+PredictionsLUNG_CANCER = predict( xgb , xtest ) 
+
+PredictionsLUNG_CANCER = ifelse( PredictionsLUNG_CANCER > 0.5 , 1 , 0 )
+
+confusionMatrix(table(PredictionsLUNG_CANCER, ytest))
+
+
+
+```
+### When using all variables, the model has an accuracy of 89.13%. When using only peer pressure and alcohol consumption we only have a reduction to 86.96%
+### Based on the accuracy, we would choose the logistic model.
+
+
+
+### 2. Produce a set of ROC curves for the previous models
+
+```{r}
+library(pROC)
+# logistic roc
+roc <- roc(train.df$LUNG_CANCER, logistic$fitted.values)
+auc(roc)
+plot(roc)
+# tree roc
+tree.roc <- roc(test.df$LUNG_CANCER, as.numeric(tree_pred))
+print(tree.roc)
+plot(tree.roc)
+# forest roc
+forest.roc <- roc(test.df$LUNG_CANCER, as.numeric(pred_values))
+print(forest.roc)
+plot(forest.roc)
+
+```
+
+### 3. Are there any variables which can be removed which do not change substantially the accuracy?
+```{r}
+
+logistic3 <- glm(LUNG_CANCER ~  AGE + SMOKING + YELLOW_FINGERS + ANXIETY + 
+    PEER_PRESSURE + CHRONIC.DISEASE + FATIGUE + ALLERGY + WHEEZING + 
+    ALCOHOL.CONSUMING + COUGHING + SHORTNESS.OF.BREATH + SWALLOWING.DIFFICULTY + 
+    CHEST.PAIN, family = binomial(), train.df)
+summary(logistic3)
+
+pdata3 <- predict(logistic3, newdata = test.df, type = "response")
+pdata3 <- ifelse(pdata2>0.5, 1, 0)
+pdata3 <- as.factor(pdata2)
+
+library(caret)
+confusionMatrix(pdata3, test.df$LUNG_CANCER)
+```
+### Yes for example, we remove gender and there is a minimal drop. We can see this through looking at the significance( pvalues)
+
+## Question 3
+### Load Data
+```{r}
+amz<-read.csv("amazon_co-ecommerce_sample.csv")
+library(stringr)
+library(readr)
+amz$price <- parse_number(amz$price)
+amz$number_available_in_stock <- parse_number(amz$number_available_in_stock)
+amz$average_review_rating <- substr(amz$average_review_rating, start = 1, stop = 3)
+
+data=amz[,c(4,5,6,7,8)]
+summary(data)
+data=na.omit(data)
+data$number_of_reviews<-as.numeric(data$number_of_reviews)
+data$average_review_rating<-as.numeric(data$average_review_rating)
+
+summary(data)
+data=na.omit(data)
+summary(data)
+```
+
+### 1. Produce 3 models to predict the price and use a 70/30 training testing split. Report on the mean squared error (MSE) for each model in testing.
+
+
+
+```{r}
+# I will be doing a linear regression, decision tree and logistic regression
+set.seed(12345)
+train.index <- sample(row.names(data), 0.7*dim(data)[1])
+test.index <- setdiff(row.names(data), train.index)
+train.df <- data[train.index, ]
+test.df <- data[test.index, ]
+
+model1 <- lm(price~.,data=train.df)
+sm1 <- summary(model1)
+
+pred <- predict(model1,test.df)
+mse1 <- mean((data$price - pred)^2,na.rm=T)
+
+
+# random forest
+library(randomForest)
+train_x<-train.df[,c(2:5)]
+train_y<-train.df$price
+rf<-randomForest(x=train_x,y=train_y,
+                 ntree = 500,importance=TRUE)
+test_x<-test.df[,c(2:5)]
+test_y<-test.df$price
+actual_values = test_y
+pred_values = predict(rf,test_x)
+cm = table(pred_values,actual_values)
+
+mse2 <- mean((data$price - pred_values)^2,na.rm=T)
+
+
+#decision tree
+model3 <- rpart(price~., data = train.df)
+pred3 <- predict(model3,test.df)
+
+mse3 <- mean((data$price - pred3)^2,na.rm=T)
+mse1
+mse2
+mse3
+
+```
+### The MSE for the linear regression, forest, and decision tree all fall closely to each other but the random forest edges the linear regression out with 2275.
+
+
+### 2. Produce a column with a price label for whether the price is above or below the average. Produce 3 models with 70/30 split to predict the binary label and report on the accuracy
+```{r}
+amz<-read.csv("amazon_co-ecommerce_sample.csv")
+library(stringr)
+library(readr)
+amz$price <- parse_number(amz$price)
+amz$number_available_in_stock <- parse_number(amz$number_available_in_stock)
+amz$average_review_rating <- substr(amz$average_review_rating, start = 1, stop = 3)
+
+data=amz[,c(4,5,6,7,8)]
+summary(data)
+data=na.omit(data)
+data$number_of_reviews<-as.numeric(data$number_of_reviews)
+data$average_review_rating<-as.numeric(data$average_review_rating)
+
+summary(data)
+data=na.omit(data)
+summary(data)
+
+averagep <- mean(data$price)
+data$price<-ifelse(data$price>averagep,1,0)
+
+set.seed(12345)
+train.index <- sample(row.names(data), 0.7*dim(data)[1])
+test.index <- setdiff(row.names(data), train.index)
+train.df <- data[train.index, ]
+test.df <- data[test.index, ]
+
+#logistic
+logistic4 <- glm(price ~ ., family = binomial(), train.df)
+summary(logistic4)
+
+pdata4 <- predict(logistic4, newdata = test.df, type = "response")
+pdata4 <- ifelse(pdata4>0.5, 1, 0)
+pdata4 <- as.factor(pdata4)
+test.df$price <- as.factor(test.df$price)
+library(caret)
+confusionMatrix(pdata4, test.df$price)
+
+#decision tree
+dec_tree4 <- rpart(price ~., data = train.df)
+#rpart.plot(dec_tree)
+summary(dec_tree4)
+
+tree_pred4 <- predict(dec_tree4,
+                    newdata = test.df)
+
+tree_pred4 <- ifelse(tree_pred4>0.5, 1, 0)
+tree_pred4 <- as.factor(tree_pred4)
+confusionMatrix(tree_pred4, test.df$price)
+
+#random forest
+train_x<-train.df[,c(2:5)]
+train_y<-train.df$price
+rf<-randomForest(x=train_x,y=train_y,
+                 ntree = 500,importance=TRUE)
+test_x<-test.df[,c(2:5)]
+test_y<-test.df$price
+actual_values = test_y
+pred_values = predict(rf,test_x)
+cm = table(pred_values,actual_values)
+#confusionMatrix(cm)
+
+```
+
+The logistic model is the best with an accuracy of 73.94%.
+
+### 3. Produce a ROC curve for the 3 models used to predict the binary price label and comment on the result for the different models.
+```{r}
+roc_log4 <- roc(train.df$price, logistic4$fitted.values)
+auc(roc_log4)
+plot(roc_log4)
+
+tree.roc4 <- roc(test.df$price, as.numeric(tree_pred4))
+print(tree.roc4)
+plot(tree.roc4)
+# forest roc
+forest.roc4 <- roc(test.df$price, as.numeric(pred_values))
+print(forest.roc4)
+plot(forest.roc4)
+
+```
+
+
